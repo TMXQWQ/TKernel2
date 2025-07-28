@@ -1,0 +1,6 @@
+#include "hal.h"
+#ifdef AMD64
+
+#include "mem_amd64.c"
+
+#endif

@@ -1,0 +1,307 @@
+#include <stdint.h>
+#include "hal.h"
+#include "limine.h"
+#define PAGE_SIZE 4096
+#define ALIGN_UP(addr, align) (((addr) + (align) - 1) & ~((align) - 1))
+
+// Limine 内存映射结构
+typedef struct limine_memmap_entry {
+    uint64_t base;
+    uint64_t length;
+    uint32_t type;
+    uint32_t reserved;
+} limine_memmap_entry;
+
+// Limine 内存映射请求结构
+typedef struct limine_memmap_request {
+    uint64_t id;
+    uint64_t revision;
+    limine_memmap_entry **response;
+} limine_memmap_request;
+
+// Limine 页表请求结构
+typedef struct limine_hhdm_request {
+    uint64_t id;
+    uint64_t revision;
+    uint64_t *response;
+} limine_hhdm_request;
+
+// 声明 Limine 内存映射请求
+__attribute__((section(".limine"), used))
+static limine_memmap_request memmap_request = {
+    .id = 0x3E87B6F3C2EF6541,
+    .revision = 0,
+    .response = NULL
+};
+
+// 声明 Limine 页表请求
+
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_hhdm_request hhdm_request = {
+        .id = LIMINE_HHDM_REQUEST,
+        .revision = 0
+};
+
+uint64_t physical_memory_offset = 0;
+
+void init_hhdm() {
+    physical_memory_offset = hhdm_request.response->offset;
+}
+
+uint64_t get_physical_memory_offset() {
+    return physical_memory_offset;
+}
+
+void *phys_to_virt(uint64_t phys_addr) {
+    return (void *) (phys_addr + physical_memory_offset);
+}
+
+void *virt_to_phys(uint64_t virt_addr) {
+    return (void *) (virt_addr - physical_memory_offset);
+}
+
+
+// 页表项标志位
+#define PAGE_PRESENT (1 << 0)
+#define PAGE_WRITABLE (1 << 1)
+#define PAGE_USER_ACCESSIBLE (1 << 2)
+
+// 获取页表项索引
+#define PML4_INDEX(addr) ((addr >> 39) & 0x1FF)
+#define PDPT_INDEX(addr) ((addr >> 30) & 0x1FF)
+#define PDT_INDEX(addr)  ((addr >> 21) & 0x1FF)
+#define PT_INDEX(addr)   ((addr >> 12) & 0x1FF)
+
+// 解析内存映射
+void parse_memory_map() {
+    limine_memmap_entry **memmap = memmap_request.response;
+    if (memmap == NULL) {
+        return;
+    }
+
+    for (uint64_t i = 0; i < (*memmap)->length; i++) {
+        limine_memmap_entry *entry = (*memmap) + i;
+        if (entry->type == 1) { // 可用内存
+            free_memory_block *block = (free_memory_block *)entry->base;
+            block->next = free_memory_list;
+            block->size = entry->length - sizeof(free_memory_block);
+            free_memory_list = block;
+        }
+    }
+}
+
+// 简单的内存分配函数
+void *kmalloc(uint64_t size) {
+    free_memory_block *current = free_memory_list;
+    free_memory_block *previous = NULL;
+
+    while (current != NULL) {
+        io_printf("az");
+        if (current->size >= size) {
+            if (current->size == size) {
+                if (previous == NULL) {
+                    free_memory_list = current->next;
+                } else {
+                    previous->next = current->next;
+                }
+                // 返回块头之后的内存地址
+                return (void *)((uint64_t)current + sizeof(free_memory_block));
+            } else {
+                free_memory_block *new_block = (free_memory_block *)((uint64_t)current + sizeof(free_memory_block) + size);
+                new_block->next = current->next;
+                new_block->size = current->size - size - sizeof(free_memory_block);
+                if (previous == NULL) {
+                    free_memory_list = new_block;
+                } else {
+                    previous->next = new_block;
+                }
+                return (void *)((uint64_t)current + sizeof(free_memory_block));
+            }
+        }
+        previous = current;
+        current = current->next;
+    }
+    return NULL;
+}
+
+
+// 合并相邻空闲块
+void merge_adjacent_blocks() {
+    free_memory_block *current = free_memory_list;
+    while (current != NULL && current->next != NULL) {
+        uint64_t current_end = (uint64_t)current + sizeof(free_memory_block) + current->size;
+        uint64_t next_start = (uint64_t)current->next;
+        if (current_end == next_start) {
+            // 相邻，合并
+            current->size += sizeof(free_memory_block) + current->next->size;
+            current->next = current->next->next;
+        } else {
+            current = current->next;
+        }
+    }
+}
+
+// 内存释放函数
+void kfree(void *ptr) {
+    if (ptr == NULL) {
+        return;
+    }
+
+    free_memory_block *block = (free_memory_block *)((uint64_t)ptr - sizeof(free_memory_block));
+    // 插入空闲链表并保持有序（按地址）
+    free_memory_block *current = free_memory_list;
+    free_memory_block *previous = NULL;
+    while (current != NULL && (uint64_t)current < (uint64_t)block) {
+        previous = current;
+        current = current->next;
+    }
+    if (previous == NULL) {
+        block->next = free_memory_list;
+        free_memory_list = block;
+    } else {
+        block->next = previous->next;
+        previous->next = block;
+    }
+
+    // 合并相邻空闲块
+    merge_adjacent_blocks();
+}
+
+// 映射页面
+void map_page(uint64_t virtual_address, uint64_t physical_address, uint64_t flags) {
+    uint64_t *pml4 = (uint64_t *)*hhdm_request.response;
+    uint64_t pml4_index = PML4_INDEX(virtual_address);
+    uint64_t *pdpt = (uint64_t *)((pml4[pml4_index] & ~0xFFF) + *hhdm_request.response);
+
+    if (!(pml4[pml4_index] & PAGE_PRESENT)) {
+        pdpt = (uint64_t *)kmalloc(4096);
+        pml4[pml4_index] = ((uint64_t)pdpt - *hhdm_request.response) | PAGE_PRESENT | PAGE_WRITABLE;
+    }
+
+    uint64_t pdpt_index = PDPT_INDEX(virtual_address);
+    uint64_t *pdt = (uint64_t *)((pdpt[pdpt_index] & ~0xFFF) + *hhdm_request.response);
+
+    if (!(pdpt[pdpt_index] & PAGE_PRESENT)) {
+        pdt = (uint64_t *)kmalloc(4096);
+        pdpt[pdpt_index] = ((uint64_t)pdt - *hhdm_request.response) | PAGE_PRESENT | PAGE_WRITABLE;
+    }
+
+    uint64_t pdt_index = PDT_INDEX(virtual_address);
+    uint64_t *pt = (uint64_t *)((pdt[pdt_index] & ~0xFFF) + *hhdm_request.response);
+
+    if (!(pdt[pdt_index] & PAGE_PRESENT)) {
+        pt = (uint64_t *)kmalloc(4096);
+        pdt[pdt_index] = ((uint64_t)pt - *hhdm_request.response) | PAGE_PRESENT | PAGE_WRITABLE;
+    }
+
+    uint64_t pt_index = PT_INDEX(virtual_address);
+    pt[pt_index] = physical_address | flags;
+}
+
+#define ALIGN(size, alignment) (((size) + (alignment) - 1) & ~((alignment) - 1))
+
+// 初始化内存映射和空闲链表
+void init_mem() {
+    limine_memmap_entry **memmap = memmap_request.response;
+    if (memmap == NULL) {
+        return;
+    }
+
+    uint64_t kernel_virtual_base = 0xFFFF000000000000;
+    for (uint64_t i = 0; i < (*memmap)->length; i++) {
+        limine_memmap_entry *entry = (*memmap) + i;
+        if (entry->type == 1) {  // 可用内存
+            uint64_t physical_address = entry->base;
+            uint64_t length = entry->length;
+            uint64_t virtual_address = kernel_virtual_base;
+
+            // 映射内存
+            for (uint64_t offset = 0; offset < length; offset += 4096) {
+                map_page(virtual_address + offset, physical_address + offset, PAGE_PRESENT | PAGE_WRITABLE);
+            }
+
+            // 初始化空闲链表
+            if (free_memory_list == NULL) {
+                free_memory_list = (struct free_memory_block *)virtual_address;
+                free_memory_list->size = length - sizeof(struct free_memory_block);
+                free_memory_list->next = NULL;
+            } else {
+                // 将新内存块添加到空闲链表
+                struct free_memory_block *new_block = (struct free_memory_block *)virtual_address;
+                new_block->size = length - sizeof(struct free_memory_block);
+                new_block->next = free_memory_list;
+                free_memory_list = new_block;
+            }
+
+            kernel_virtual_base += length;
+        }
+    }
+}
+
+
+void *page_alloc(long num) {
+    if (num <= 0) return NULL; // 处理无效输入
+
+    // 获取 HHDM 偏移量
+    uint64_t hhdm_offset = *hhdm_request.response;
+
+    free_memory_block *current = free_memory_list;
+    free_memory_block *prev = NULL;
+
+    const uint64_t required_size = num * PAGE_SIZE; // 计算需要的总大小
+
+    while (current != NULL) {
+        // 计算当前块的虚拟地址和物理地址
+        uint64_t block_vaddr = (uint64_t)current;
+        uint64_t block_paddr = block_vaddr - hhdm_offset;
+
+        // 计算可用内存区域的虚拟地址范围
+        uint64_t block_start_vaddr = block_vaddr + sizeof(free_memory_block);
+        uint64_t block_size = current->size;
+        uint64_t block_end_vaddr = block_start_vaddr + block_size;
+
+        // 计算对齐后的起始虚拟地址
+        uint64_t aligned_start_vaddr = ALIGN_UP(block_start_vaddr, PAGE_SIZE);
+
+        // 检查是否能容纳 num 个完整页
+        if (aligned_start_vaddr + required_size <= block_end_vaddr) {
+            // 计算分割参数
+            uint64_t front_size = aligned_start_vaddr - block_start_vaddr;
+            uint64_t remaining_vaddr = aligned_start_vaddr + required_size;
+            uint64_t remaining_size = block_end_vaddr - remaining_vaddr;
+
+            // 从链表中移除当前块
+            if (prev == NULL) {
+                free_memory_list = current->next;
+            } else {
+                prev->next = current->next;
+            }
+
+            // 处理前部碎片（如果能容纳元数据）
+            if (front_size >= sizeof(free_memory_block)) {
+                free_memory_block *front_block = (free_memory_block *)block_vaddr;
+                front_block->size = front_size - sizeof(free_memory_block);
+                front_block->next = free_memory_list;
+                free_memory_list = front_block;
+            }
+
+            // 处理后部剩余空间（如果能容纳元数据）
+            if (remaining_size >= sizeof(free_memory_block)) {
+                free_memory_block *rear_block = 
+                    (free_memory_block *)(remaining_vaddr - sizeof(free_memory_block));
+                rear_block->size = remaining_size - sizeof(free_memory_block);
+                rear_block->next = free_memory_list;
+                free_memory_list = rear_block;
+            }
+
+            // 返回对齐的物理地址（连续区域的起始地址）
+            return (void *)(aligned_start_vaddr - hhdm_offset);
+        }
+
+        prev = current;
+        current = current->next;
+    }
+
+    return NULL; // 没有足够的连续空间
+}

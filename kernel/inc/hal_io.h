@@ -1,0 +1,30 @@
+#ifndef HAL_IO_H
+#define HAL_IO_H
+
+//设置printf默认输出方式    0:串口  1:tty
+#define io_printf_mode 0
+#define io_scanf_mode 0
+#define MAX_STRING 65536
+/*  IO  
+    *基本IO函数
+    *串口
+    *...
+*/
+/*  基本IO函数  */
+uint8_t io_in8(uint16_t port);
+uint16_t io_in16(uint16_t port);
+uint32_t io_in32(uint16_t port);
+void io_out8(uint16_t port, uint8_t msg);
+void io_out16(uint16_t port, uint16_t msg);
+void io_out32(uint16_t port, uint32_t msg);
+void io_printf(const char* string);
+int32_t io_scanf(int32_t max_size, char* str);
+void io_hlt();
+/*  串口    */
+void init_serial();
+void putc_serial(char c);
+char gets_serial();
+
+
+
+#endif

@@ -1,0 +1,170 @@
+#include <limine.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <string.h>
+#include "hal.h"
+
+// Limine 内存映射请求
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0
+};
+
+// 页大小（4KB）
+#define PAGE_SIZE 4096
+
+// 物理内存管理器
+static uint8_t *bitmap = NULL; // 位图，用于管理物理页
+uint8_t _bitmap[256];
+static size_t total_pages = 0; // 总物理页数
+static size_t last_allocated_page = 0; // 最后分配的页，用于优化分配
+static PhysicalMemoryManager phys_mem = {0};
+static VirtualMemoryManager virt_mem = {0};
+// 虚拟内存管理器
+static uintptr_t *pml4_table = NULL; // PML4 表（x86-64 的四级页表）
+
+static void mark_region(uint64_t base, uint64_t length, bool reserved) {
+    uint64_t start_page = base / PAGE_SIZE;
+    uint64_t end_page = (base + length + PAGE_SIZE - 1) / PAGE_SIZE;
+    
+    for (uint64_t page = start_page; page < end_page; ++page) {
+        size_t byte = page / 8;
+        uint8_t bit = page % 8;
+        
+        if (reserved) {
+            phys_mem.bitmap_virt[byte] |= (1 << bit);
+        } else {
+            phys_mem.bitmap_virt[byte] &= ~(1 << bit);
+        }
+    }
+}
+
+// 初始化内存管理器
+void mem_init() {
+    struct limine_memmap_response* memmap = memmap_request.response;
+    
+    // 步骤1：计算需要管理的总内存
+    uint64_t max_addr = 0;
+    for (size_t i = 0; i < memmap->entry_count; ++i) {
+        struct limine_memmap_entry* entry = memmap->entries[i];
+        uint64_t end = entry->base + entry->length;
+        if (end > max_addr) max_addr = end;
+    }
+    phys_mem.total_pages = max_addr / PAGE_SIZE;
+
+    // 步骤2：在位图区域选择
+    for (size_t i = 0; i < memmap->entry_count; ++i) {
+        struct limine_memmap_entry* entry = memmap->entries[i];
+        if (entry->type != LIMINE_MEMMAP_USABLE) continue;
+
+        size_t bitmap_size = (phys_mem.total_pages + 7) / 8;
+        if (entry->length >= bitmap_size) {
+            phys_mem.bitmap_phys = (uint8_t*)entry->base;
+            
+            // 步骤3：建立虚拟地址映射
+            uintptr_t virt_base = KERNEL_VIRT_BASE + (uintptr_t)phys_mem.bitmap_phys;
+            for (uint64_t off = 0; off < bitmap_size; off += PAGE_SIZE) {
+                map_page(virt_base + off, (uintptr_t)phys_mem.bitmap_phys + off, 0x03);
+            }
+            phys_mem.bitmap_virt = (uint8_t*)virt_base;
+            
+            // 标记该区域为已占用
+            mark_region(entry->base, bitmap_size, true);
+            break;
+        }
+    }
+
+    // 步骤4：初始化位图
+    memset(phys_mem.bitmap_virt, 0, (phys_mem.total_pages + 7) / 8);
+    for (size_t i = 0; i < memmap->entry_count; ++i) {
+        struct limine_memmap_entry* entry = memmap->entries[i];
+        if (entry->type != LIMINE_MEMMAP_USABLE) {
+            mark_region(entry->base, entry->length, true);
+        }
+    }
+
+    // 初始化虚拟内存管理
+    virt_mem.pml4 = (uintptr_t*)page_alloc(1);
+    memset(virt_mem.pml4, 0, PAGE_SIZE);
+}
+
+// 分配物理页
+void *page_alloc(size_t num) {
+    size_t consecutive_pages = 0;
+    for (size_t i = last_allocated_page; i < total_pages; i++) {
+        if (!(bitmap[i / 8] & (1 << (i % 8)))) {
+            consecutive_pages++;
+            if (consecutive_pages == num) {
+                // 标记页为已分配
+                for (size_t j = i - num + 1; j <= i; j++) {
+                    bitmap[j / 8] |= (1 << (j % 8));
+                }
+                last_allocated_page = i + 1;
+                return (void *)((i - num + 1) * PAGE_SIZE);
+            }
+        } else {
+            consecutive_pages = 0;
+        }
+    }
+    return NULL; // 没有足够的连续页
+}
+
+// 释放物理页
+void page_free(void *addr, size_t num) {
+    size_t start_page = (uintptr_t)addr / PAGE_SIZE;
+    for (size_t i = start_page; i < start_page + num; i++) {
+        bitmap[i / 8] &= ~(1 << (i % 8));
+    }
+}
+
+// 映射虚拟地址到物理地址
+void map_page(uintptr_t virtual_addr, uintptr_t physical_addr, uint64_t flags) {
+    size_t pml4_index = (virtual_addr >> 39) & 0x1FF;
+    size_t pdp_index = (virtual_addr >> 30) & 0x1FF;
+    size_t pd_index = (virtual_addr >> 21) & 0x1FF;
+    size_t pt_index = (virtual_addr >> 12) & 0x1FF;
+
+    uintptr_t *pdp_table = (uintptr_t *)(pml4_table[pml4_index] & ~0xFFF);
+    if (!pdp_table) {
+        pdp_table = (uintptr_t *)page_alloc(1);
+        memset(pdp_table, 0, PAGE_SIZE);
+        pml4_table[pml4_index] = (uintptr_t)pdp_table | flags;
+    }
+
+    uintptr_t *pd_table = (uintptr_t *)(pdp_table[pdp_index] & ~0xFFF);
+    if (!pd_table) {
+        pd_table = (uintptr_t *)page_alloc(1);
+        memset(pd_table, 0, PAGE_SIZE);
+        pdp_table[pdp_index] = (uintptr_t)pd_table | flags;
+    }
+
+    uintptr_t *pt_table = (uintptr_t *)(pd_table[pd_index] & ~0xFFF);
+    if (!pt_table) {
+        pt_table = (uintptr_t *)page_alloc(1);
+        memset(pt_table, 0, PAGE_SIZE);
+        pd_table[pd_index] = (uintptr_t)pt_table | flags;
+    }
+
+    pt_table[pt_index] = physical_addr | flags;
+}
+
+// 取消映射虚拟地址
+void unmap_page(uintptr_t virtual_addr) {
+    size_t pml4_index = (virtual_addr >> 39) & 0x1FF;
+    size_t pdp_index = (virtual_addr >> 30) & 0x1FF;
+    size_t pd_index = (virtual_addr >> 21) & 0x1FF;
+    size_t pt_index = (virtual_addr >> 12) & 0x1FF;
+
+    uintptr_t *pdp_table = (uintptr_t *)(pml4_table[pml4_index] & ~0xFFF);
+    if (!pdp_table) return;
+
+    uintptr_t *pd_table = (uintptr_t *)(pdp_table[pdp_index] & ~0xFFF);
+    if (!pd_table) return;
+
+    uintptr_t *pt_table = (uintptr_t *)(pd_table[pd_index] & ~0xFFF);
+    if (!pt_table) return;
+
+    pt_table[pt_index] = 0;
+}

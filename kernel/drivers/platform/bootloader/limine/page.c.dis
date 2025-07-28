@@ -1,0 +1,209 @@
+#include "alloc.h"
+
+
+ticketlock page_lock;
+
+page_directory_t kernel_page_dir;
+page_directory_t *current_directory = NULL;
+
+static bool is_huge_page(page_table_entry_t *entry){
+    return (((uint64_t)entry) & PTE_HUGE) != 0;
+}
+
+__IRQHANDLER static void page_fault_handle(interrupt_frame_t *frame,uint64_t error_code) {
+    close_interrupt;
+    disable_scheduler();
+    switch_page_directory(get_kernel_pagedir());
+    uint64_t faulting_address;
+    __asm__ volatile("mov %%cr2, %0" : "=r"(faulting_address));
+    if(get_current_task() != NULL){
+    }
+    if(get_current_task() != NULL){
+    }
+}
+
+void page_table_clear(page_table_t *table){
+    for(int i = 0;i < 512;i++){
+        table->entries[i].value = 0;
+    }
+}
+
+page_table_t *page_table_create(page_table_entry_t *entry){
+    if(entry->value == (uint64_t)NULL) {
+        uint64_t frame = alloc_frames(1);
+        entry->value = frame | PTE_PRESENT | PTE_WRITEABLE | PTE_USER;
+        page_table_t *table = (page_table_t *) phys_to_virt(entry->value & 0xFFFFFFFFFFFFF000);
+        page_table_clear(table);
+        return table;
+    }
+    page_table_t *table = (page_table_t *) phys_to_virt(entry->value & 0xFFFFFFFFFFFFF000); //获取页帧物理基址并转换成虚拟地址
+    return table;
+}
+
+page_directory_t *get_kernel_pagedir(){
+    return &kernel_page_dir;
+}
+
+page_directory_t *get_current_directory(){
+    return current_directory;
+}
+
+static void copy_page_table_recursive(page_table_t *source_table, page_table_t *new_table, int level) {
+    if (level == 0) {
+        for (int i = 0; i < 512; i++) {
+            new_table->entries[i].value = source_table->entries[i].value;
+        }
+        return;
+    }
+
+    for (int i = 0; i < 512; i++) {
+        if (source_table->entries[i].value == 0) {
+            new_table->entries[i].value = 0;
+            continue;
+        }
+        page_table_t *source_next_level = (page_table_t *)phys_to_virt(source_table->entries[i].value & 0xFFFFFFFFFFFFF000);
+        page_table_t *new_next_level = page_table_create(&(new_table->entries[i]));
+        new_table->entries[i].value = (uint64_t)new_next_level | (source_table->entries[i].value & 0xFFF);
+
+        copy_page_table_recursive(source_next_level, new_next_level, level - 1);
+    }
+}
+
+page_directory_t *clone_directory(page_directory_t *src){
+    ticket_lock(&page_lock);
+    page_directory_t *new_directory = malloc(sizeof(page_directory_t));
+    new_directory->table = malloc(sizeof(page_table_t));
+    copy_page_table_recursive(src->table, new_directory->table, 3);
+    ticket_unlock(&page_lock);
+    return new_directory;
+}
+
+void page_map_to(page_directory_t *directory,uint64_t addr,uint64_t frame,uint64_t flags){
+    uint64_t l4_index = (((addr >> 39)) & 0x1FF);
+    uint64_t l3_index = (((addr >> 30)) & 0x1FF);
+    uint64_t l2_index = (((addr >> 21)) & 0x1FF);
+    uint64_t l1_index = (((addr >> 12)) & 0x1FF);
+
+    page_table_t *l4_table = directory->table;
+    page_table_t *l3_table = page_table_create(&(l4_table->entries[l4_index]));
+    page_table_t *l2_table = page_table_create(&(l3_table->entries[l3_index]));
+    page_table_t *l1_table = page_table_create(&(l2_table->entries[l2_index]));
+
+    l1_table->entries[l1_index].value = (frame & 0xFFFFFFFFFFFFF000) | flags;
+
+    flush_tlb(addr);
+}
+
+void switch_page_directory(page_directory_t *dir){
+    current_directory = dir;
+    page_table_t *physical_table = virt_to_phys((uint64_t)dir->table);
+    __asm__ volatile("mov %0, %%cr3" : : "r"(physical_table));
+}
+
+void page_map_range_to(page_directory_t *directory,uint64_t frame,uint64_t length,uint64_t flags){
+    for(uint64_t i = 0;i < length;i += 0x1000){
+        uint64_t var = (uint64_t)phys_to_virt(frame + i);
+        page_map_to(directory,var,frame + i,flags);
+    }
+}
+
+void page_setup() {
+    page_table_t *kernel_page_table = (page_table_t *) phys_to_virt(get_cr3());
+    kernel_page_dir = (page_directory_t){.table = kernel_page_table};
+    register_interrupt_handler(14, (void *) page_fault_handle, 0, 0x8E);
+    current_directory = &kernel_page_dir;
+    kinfo("Kernel page table in 0x%p", kernel_page_table);
+}
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_memmap_request memmap_request = {
+        .id = LIMINE_MEMMAP_REQUEST,
+        .revision = 0,
+};
+
+FrameAllocator frame_allocator;
+uint64_t memory_size = 0;
+
+void init_page() {
+    struct limine_memmap_response *memory_map = memmap_request.response;
+
+    for (uint64_t i = memory_map->entry_count - 1; i >= 0; i--) {
+        struct limine_memmap_entry *region = memory_map->entries[i];
+        if (region->type == LIMINE_MEMMAP_USABLE) {
+            memory_size = region->base + region->length;
+            break;
+        }
+    }
+
+    size_t bitmap_size = (memory_size / 4096 + 7) / 8;
+    uint64_t bitmap_address = 0;
+
+    for (uint64_t i = 0; i < memory_map->entry_count; i++) {
+        struct limine_memmap_entry *region = memory_map->entries[i];
+        if (region->type == LIMINE_MEMMAP_USABLE && region->length >= bitmap_size) {
+            bitmap_address = region->base;
+            break;
+        }
+    }
+
+    if (!bitmap_address) return;
+
+    Bitmap *bitmap = &frame_allocator.bitmap;
+    bitmap_init(bitmap, phys_to_virt(bitmap_address), bitmap_size);
+
+    size_t origin_frames = 0;
+    for (uint64_t i = 0; i < memory_map->entry_count; i++) {
+        struct limine_memmap_entry *region = memory_map->entries[i];
+        if (region->type == LIMINE_MEMMAP_USABLE) {
+            size_t start_frame = region->base / 4096;
+            size_t frame_count = region->length / 4096;
+            origin_frames += frame_count;
+            bitmap_set_range(bitmap, start_frame, start_frame + frame_count, true);
+        }
+    }
+
+    size_t bitmap_frame_start = bitmap_address / 4096;
+    size_t bitmap_frame_count = (bitmap_size + 4095) / 4096;
+    size_t bitmap_frame_end = bitmap_frame_start + bitmap_frame_count;
+    bitmap_set_range(bitmap, bitmap_frame_start, bitmap_frame_end, false);
+
+    frame_allocator.origin_frames = origin_frames;
+    frame_allocator.usable_frames = origin_frames - bitmap_frame_count;
+
+    logkf("Available memory: %lld MiB\n", (origin_frames / 256));
+}
+
+uint64_t alloc_pages(size_t count) {
+    Bitmap *bitmap = &frame_allocator.bitmap;
+    size_t frame_index = bitmap_find_range(bitmap, count, true);
+
+    if (frame_index == (size_t) -1) return 0;
+    bitmap_set_range(bitmap, frame_index, frame_index + count, false);
+    frame_allocator.usable_frames -= count;
+
+    return frame_index * 4096;
+}
+
+int map_page(uint64_t vaddr, uint64_t paddr) {
+    // 参数检查
+    if ((vaddr & (PAGE_SIZE - 1)) return -EINVAL; // 虚拟地址未对齐
+    if ((paddr & (PAGE_SIZE - 1)) return -EINVAL; // 物理地址未对齐
+    
+    // 获取当前页目录
+    page_directory_t *dir = get_current_directory();
+    if (!dir) return -ENOENT;
+
+    // 设置映射标志
+    uint64_t flags = PTE_PRESENT | PTE_WRITEABLE;
+    if (vaddr < KERNEL_BASE) {
+        flags |= PTE_USER; // 用户空间页面
+    }
+
+    // 调用底层映射函数
+    page_map_to(dir, vaddr, paddr, flags);
+
+    // 刷新TLB
+    flush_tlb(vaddr);
+
+    return 0;
+}
