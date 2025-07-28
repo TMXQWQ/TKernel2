@@ -34,5 +34,11 @@
         "bitmap.h": "c",
         "stdint.h": "c",
         "stddef.h": "c"
-    }
+    },
+    "clangd.arguments": [
+        "--background-index",
+        "--clang-tidy",
+        "--header-insertion=never",
+        "--enable-config",
+    ],
 }

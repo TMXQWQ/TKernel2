@@ -1,0 +1,45 @@
+name: CI Workflow
+
+on:
+  push:
+    paths:
+      - 'devices/**'
+      - 'include/**'
+      - 'init/**'
+      - 'kernel/**'
+      - 'libs/**'
+  pull_request:
+    paths:
+      - 'devices/**'
+      - 'include/**'
+      - 'init/**'
+      - 'kernel/**'
+      - 'libs/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: make gcc xorriso
+          version: 1.0
+
+      - name: Build Project
+        run: make VERBOSE=1
+
+      - name: Upload ISO file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tkernel.iso
+          path: ./tkernel.iso
+
+      - name: Upload Kernel file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel.bin
+          path: ./kernel.bin
