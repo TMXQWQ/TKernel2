@@ -244,7 +244,7 @@ timer_irq_handler(struct interrupt_frame *frame) {
 }
 
 //简易轮转调度
-volatile int scheduler(struct interrupt_frame *frame, regs_t *regs) {
+int scheduler(struct interrupt_frame *frame, regs_t *regs) {
   static uint32_t count = 0;
   count++;
   // printks("%d",count);

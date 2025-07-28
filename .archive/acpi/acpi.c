@@ -14,9 +14,9 @@
 #include "hhdm.h"
 #include "limine.h"
 #include "pci.h"
-#include "printk.h"
+#include "debug.h"
 #include "stdint.h"
-#include "uinxed.h"
+#include "utils.h"
 
 xsdt_t *xsdt = 0;
 rsdt_t *rsdt = 0;

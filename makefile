@@ -14,6 +14,9 @@ QEMU_FLAGS := -bios ./assets/OVMF.fd -cdrom tkernel.iso
 # QEMU_KVM := -enable-kvm -cpu host
 # QEMU_reOUT := > ./qemu.log
 QEMU_OUT := -serial stdio $(QEMU_reOUT)
+CHECKS         := -quiet -checks=-*,clang-analyzer-*,bugprone-*,cert-*,misc-*,performance-*,portability-*,-misc-include-cleaner,-clang-analyzer-security.insecureAPI.*
+C_FLAGS		:= -Wall -Wextra -g3 -O0 -m64 -fno-builtin -fno-pie -fno-stack-protector -fno-sanitize=undefined \
+               -mcmodel=large -mno-red-zone -mno-80387 $(C_FPU_MMX_SSE_FLAGS) -msoft-float -I include -MMD -I ./kernel/inc ./kernel
 
 info: 
 	@printf "\033[1;32m[INFO]\033[0m";
@@ -69,3 +72,11 @@ format: $(C_SOURCES:%=%.fmt) $(S_SOURCES:%=%.fmt) $(HEADERS:%=%.fmt)
 %.fmt: %
 	$(Q)printf "\033[1;32m[Format]\033[0m $< ...\n"
 	$(Q)clang-format -i $<
+
+%.tidy: %
+	$(Q)printf "\033[1;32m[Checks]\033[0m $< ...\n"
+	$(Q)clang-tidy $< $(CHECKS) -- $(C_FLAGS)
+
+
+check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
+	$(Q)printf "\033[1;32m[Done]\033[0m Code Checks complete.\n\n"
