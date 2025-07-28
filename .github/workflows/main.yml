@@ -43,3 +43,12 @@ jobs:
         with:
           name: kernel.bin
           path: ./kernel.bin
+
+      - name: Release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.date.outputs.date }}
+          tag_name: ${{ steps.date.outputs.date }}
+          files: |
+            tkernel.iso
+            kernel.bin

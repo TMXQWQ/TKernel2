@@ -45,23 +45,23 @@ void sti(void) { __asm__ volatile("sti"); }
 void hlt(void) { __asm__ volatile("hlt"); }
 
 //============== 端口IO ==============//
-uint8_t inb(uint16_t port) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) uint8_t inb(uint16_t port) {
   uint8_t ret;
   __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
   return ret;
 }
 
-void outb(uint16_t port, uint8_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void outb(uint16_t port, uint8_t value) {
   __asm__ volatile("outb %0, %1" ::"a"(value), "Nd"(port));
 }
 
-uint16_t inw(uint16_t port) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) uint16_t inw(uint16_t port) {
   uint16_t ret;
   __asm__ volatile("inw %1, %0" : "=a"(ret) : "Nd"(port));
   return ret;
 }
 
-void outw(uint16_t port, uint16_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void outw(uint16_t port, uint16_t value) {
   __asm__ volatile("outw %0, %1" ::"a"(value), "Nd"(port));
 }
 
@@ -71,14 +71,14 @@ uint32_t ind(uint16_t port) {
   return ret;
 }
 
-void outd(uint16_t port, uint32_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void outd(uint16_t port, uint32_t value) {
   __asm__ volatile("outl %0, %1" ::"a"(value), "Nd"(port));
 }
 
 //============== 特殊寄存器 ==============//
 uint64_t rdtsc(void) {
-  uint32_t low, high;
   __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
+  uint32_t low, high;
   return ((uint64_t)high << 32) | low;
 }
 
@@ -88,7 +88,7 @@ uint64_t rdmsr(uint32_t msr) {
   return ((uint64_t)high << 32) | low;
 }
 
-void wrmsr(uint32_t msr, uint64_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void wrmsr(uint32_t msr, uint64_t value) {
   uint32_t low = value & 0xFFFFFFFF;
   uint32_t high = value >> 32;
   __asm__ volatile("wrmsr" ::"a"(low), "d"(high), "c"(msr));
@@ -101,64 +101,8 @@ void sfence(void) { __asm__ volatile("sfence" ::: "memory"); }
 
 void lfence(void) { __asm__ volatile("lfence" ::: "memory"); }
 
-// #define SAVE_REGS \
-//     "cli\n"                  // 关闭中断
-//     "pushq $0\n"             // 对齐
-//     "pushq $0\n"             // 对齐
-//     "pushq %r15\n"          \
-//     "pushq %r14\n"          \
-//     "pushq %r13\n"         \
-//     "pushq %r12\n"          \
-//     "pushq %r11\n"          \
-//     "pushq %r10\n"          \
-//     "pushq %r9\n"           \
-//     "pushq %r8\n"           \
-//     "pushq %rdi\n"          \
-//     "pushq %rsi\n"          \
-//     "pushq %rbp\n"          \
-//     "pushq %rdx\n"          \
-//     "pushq %rcx\n"          \
-//     "pushq %rbx\n"          \
-//     "pushq %rax\n"          \
-//     "movq %gs, %rax\n"      \
-//     "pushq %rax\n"          \
-//     "movq %fs, %rax\n"      \
-//     "pushq %rax\n"          \
-//     "movq %es, %rax\n"      \
-//     "pushq %rax\n"          \
-//     "movq %ds, %rax\n"      \
-//     "pushq %rax\n"          \
-//     "movq %rsp, %rdi\n"      // 将 RSP 作为参数传递给 timer_handle
-//     "movq %rax, %rsp\n"      // 恢复 RSP
-//     "popq %rax\n"           \
-//     "movq %rax, %ds\n"      \
-//     "popq %rax\n"           \
-//     "movq %rax, %es\n"      \
-//     "popq %rax\n"           \
-//     "movq %rax, %fs\n"      \
-//     "popq %rax\n"           \
-//     "movq %rax, %gs\n"      \
-//     "popq %rax\n"           \
-//     "popq %rbx\n"           \
-//     "popq %rcx\n"           \
-//     "popq %rdx\n"           \
-//     "popq %rbp\n"           \
-//     "popq %rsi\n"           \
-//     "popq %rdi\n"           \
-//     "popq %r8\n"            \
-//     "popq %r9\n"            \
-//     "popq %r10\n"           \
-//     "popq %r11\n"           \
-//     "popq %r12\n"           \
-//     "popq %r13\n"           \
-//     "popq %r14\n"           \
-//     "popq %r15\n"           \
-//     "addq $16, %rsp\n"       // 越过对齐
-//     "sti\n"                  // 打开中断
-//     "iretq\n"                // 中断返回
-
 // 内联汇编实现的上下文切换
-void switch_context(uint64_t *old_rsp, uint64_t new_rsp) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void switch_context(uint64_t *old_rsp, uint64_t new_rsp) {
   __asm__ volatile("pushq %rbp\n" // 保存当前基址指针
                    "pushq %rbx\n" // 保存当前寄存器
                    "pushq %r12\n"
