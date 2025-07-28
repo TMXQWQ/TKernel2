@@ -47,8 +47,9 @@ jobs:
       - name: Release artifacts
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ steps.date.outputs.date }}
-          tag_name: ${{ steps.date.outputs.date }}
+          name: nightly-${{ steps.date.outputs.date }}-(${{ github.sha }})
+          tag_name: nightly-${{ steps.date.outputs.date }}-${{ github.run_id }}
+          prerelease: true
           files: |
             tkernel.iso
             kernel.bin

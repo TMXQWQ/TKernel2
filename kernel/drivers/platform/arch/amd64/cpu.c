@@ -103,6 +103,8 @@ void lfence(void) { __asm__ volatile("lfence" ::: "memory"); }
 
 // 内联汇编实现的上下文切换
 __attribute__((disable("bugprone-easily-swappable-parameters"))) void switch_context(uint64_t *old_rsp, uint64_t new_rsp) {
+  (void)old_rsp;
+  (void)new_rsp;
   __asm__ volatile("pushq %rbp\n" // 保存当前基址指针
                    "pushq %rbx\n" // 保存当前寄存器
                    "pushq %r12\n"
