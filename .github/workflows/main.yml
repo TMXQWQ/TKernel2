@@ -30,7 +30,7 @@ jobs:
           version: 1.0
 
       - name: Build Project
-        run: make VERBOSE=1
+        run: make tkernel.iso VERBOSE=1
 
       - name: Upload ISO file as artifact
         uses: actions/upload-artifact@v4
