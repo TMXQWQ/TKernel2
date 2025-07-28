@@ -77,8 +77,8 @@ __attribute__((disable("bugprone-easily-swappable-parameters"))) void outd(uint1
 
 //============== 特殊寄存器 ==============//
 uint64_t rdtsc(void) {
-  __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
   uint32_t low, high;
+  __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
   return ((uint64_t)high << 32) | low;
 }
 
