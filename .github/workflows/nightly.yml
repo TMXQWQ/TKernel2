@@ -1,7 +1,8 @@
-name: build
+name: nightly build
 
 on:
-  workflow_dispatch:    # 手动触发按钮
+  schedule:
+    - cron: '0 0 * * *' # 每日 UTC 零点触发
 
 permissions:
   contents: write
@@ -37,8 +38,8 @@ jobs:
       - name: Release artifacts
         uses: softprops/action-gh-release@v2
         with:
-          name: build-${{ steps.date.outputs.date }}-(${{ github.sha }})
-          tag_name: build-${{ steps.date.outputs.date }}-${{ github.run_id }}
+          name: nightly-${{ steps.date.outputs.date }}-(${{ github.sha }})
+          tag_name: nightly-${{ steps.date.outputs.date }}-${{ github.run_id }}
           prerelease: true
           files: |
             tkernel.iso
