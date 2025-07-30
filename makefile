@@ -43,8 +43,8 @@ kerneldump.log: kernel.bin
 	$(V)objdump -d kernel.bin > kerneldump.log & #耗时太久，后台写入
 
 clean:	
-	make clean -C kernel
-	rm  -f ./kernel.bin ./tkernel.iso ./vkernel.bin
+	$(V)make clean -C kernel
+	$(V)rm  -f ./kernel.bin ./tkernel.iso ./vkernel.bin
 
 tkernel.iso: kernel.bin kerneldump.log
 	@mkdir -p iso
@@ -52,8 +52,8 @@ tkernel.iso: kernel.bin kerneldump.log
 	@cp ./kernel.bin ./iso/kernel
 	@touch ./tkernel.iso
 	xorriso $(XORRISOFLAGS) ./iso -o ./tkernel.iso \
-	#  2> /dev/null
-	rm -rf ./iso
+	@#  2> /dev/null
+	$(V)rm -rf ./iso
 	
 
 run: tkernel.iso

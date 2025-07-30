@@ -1,20 +1,9 @@
 name: CI Workflow
 
 on:
-  push:
-    paths:
-      - 'devices/**'
-      - 'include/**'
-      - 'init/**'
-      - 'kernel/**'
-      - 'libs/**'
-  pull_request:
-    paths:
-      - 'devices/**'
-      - 'include/**'
-      - 'init/**'
-      - 'kernel/**'
-      - 'libs/**'
+  schedule:
+    - cron: '0 0 * * *' # 每日 UTC 零点触发
+  workflow_dispatch:    # 手动触发按钮
 
 permissions:
   contents: write
@@ -46,3 +35,13 @@ jobs:
         with:
           name: kernel.bin
           path: ./kernel.bin
+
+      - name: Release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          name: nightly-${{ steps.date.outputs.date }}-(${{ github.sha }})
+          tag_name: nightly-${{ steps.date.outputs.date }}-${{ github.run_id }}
+          prerelease: true
+          files: |
+            tkernel.iso
+            kernel.bin
