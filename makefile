@@ -44,7 +44,7 @@ kerneldump.log: kernel.bin
 
 clean:	
 	make clean -C kernel
-	rm ./kernel.bin ./tkernel.iso ./vkernel.bin
+	rm  -f ./kernel.bin ./tkernel.iso ./vkernel.bin
 
 tkernel.iso: kernel.bin kerneldump.log
 	@mkdir -p iso

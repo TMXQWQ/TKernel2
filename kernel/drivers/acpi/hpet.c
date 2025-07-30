@@ -12,8 +12,9 @@
 #include "acpi.h"
 #include "hhdm.h"
 #include "idt.h"
-#include "printk.h"
+#include "debug.h"
 #include "stdint.h"
+#include "hal.h"
 
 hpet_info_t *hpet_addr;
 static uint32_t hpet_period = 0;
@@ -42,6 +43,6 @@ void hpet_init(hpet_t *hpet)
     plogk("hpet: HPET Timer Period = %u (us)\n", hpet_period);
 
     hpet_addr->general_configuration |= 1;
-    register_interrupt_handler(IRQ_0, (void *)timer_handle, 0, 0x8e);
+    set_intr_gate(IRQ_0, 0, (void *)timer_handle);
     plogk("hpet: HPET General Configuration Register set to 0x%08llx\n", hpet_addr->general_configuration);
 }

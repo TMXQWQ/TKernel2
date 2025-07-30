@@ -77,5 +77,7 @@ typedef union PointerCast {
         void *ptr;
         uintptr_t val;
 } PointerCast;
+typedef PointerCast pointer_cast_t;
+
 
 #endif // INCLUDE_STDINT_H_

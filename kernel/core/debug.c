@@ -300,3 +300,27 @@ int printk(const char *format, ...) {
   io_printf(buff);
   return 0;
 }
+
+/* Kernel print log */
+void plogk(const char *format, ...)
+{
+#ifdef KERNEL_LOG
+    // spin_lock(&plogk_lock); // Lock
+    // printk("[%5d.%06d] ", nano_time() / 1000000000, (nano_time() / 1000) % 1000000);
+    static char buff[BUF_SIZE];
+    va_list args;
+    // overflow_signal_t *sig = 0;
+
+    va_start(args, format);
+    while (1) {
+        sig = vsprintf_s(sig, buff, BUF_SIZE, &format, args);
+        // tty_print_str(buff);
+        io_printf(buff);
+        if (sig == 0) break;
+    }
+    va_end(args);
+    // spin_unlock(&plogk_lock); // Unlock
+#else
+    (void)format;
+#endif
+}

@@ -42,11 +42,11 @@ kernel.bin: $(OBJS) $(LIBS)
 
 
 clean:
-	$(V)rm $(DEPS)
-	$(V)rm $(OBJS)
+	$(V)rm -f $(OBJS)
+	$(V)rm -f $(DEPS)
 	$(V)rm -rf ./iso
-	$(V)rm kernel.bin
-	# $(V)rm tkernel.iso
+	$(V)rm -f kernel.bin
+	# $(V)rm -f tkernel.iso
 
 loader.o:
 	make -C module/loader clean

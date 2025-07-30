@@ -10,9 +10,9 @@
  */
 
 #include "acpi.h"
-#include "common.h"
+#include "cpu.h"
 #include "hhdm.h"
-#include "printk.h"
+#include "debug.h"
 #include "stdint.h"
 #include "string.h"
 #include "timer.h"

@@ -13,7 +13,7 @@ void disable_scheduler();
 int scheduler(struct interrupt_frame *frame, regs_t* regs);
 
 __attribute__((interrupt))
-void timer_irq_handler(struct interrupt_frame *frame);
+void timer_handle(struct interrupt_frame *frame);
 
 // 切换上下文：保存 old，恢复 new
 void switch_to(pcb_t* source, pcb_t* target,struct interrupt_frame *frame, regs_t* regs);

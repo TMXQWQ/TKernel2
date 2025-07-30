@@ -230,7 +230,7 @@ int _scheduler() {
 
 regs_t *tmp;
 __attribute__((interrupt)) void
-timer_irq_handler(struct interrupt_frame *frame) {
+timer_handle(struct interrupt_frame *frame) {
   // for (int i = 0; i < 5; i++)
   //     printks("frame[%d] = 0x%lx\n", i, frame[i]);
   // __asm__("mov %0,%%rsp\n\tiretq"::"r"(frame):);

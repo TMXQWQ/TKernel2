@@ -143,7 +143,7 @@ void idt_init(void) {
   set_intr_gate(1, 0, default_irq_handler);  // 调试异常
   set_intr_gate(2, 1, default_irq_handler);  // NMI使用IST1
   set_intr_gate(8, 1, double_fault_handler); // 双重错误使用IST1
-  set_intr_gate(0x40, 0, timer_irq_handler); //(暂未完全功能)定时器中断
+  set_intr_gate(0x40, 0, timer_handle); //(暂未完全功能)定时器中断
 
   // 5. 加载IDT
   struct {

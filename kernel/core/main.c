@@ -20,6 +20,7 @@
 #include "switch.h"
 #include "terminal.h"
 #include "vfs.h"
+#include "apic.h"
 
 int kernel_main() {
   __asm__("cli");

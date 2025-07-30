@@ -86,5 +86,5 @@ void acpi_init(void)
     load_table(HPET, hpet_init);
     load_table(APIC, apic_init);
     load_table(FACP, facp_init);
-    load_table(MCFG, mcfg_init);
+    // load_table(MCFG, mcfg_init);
 }
