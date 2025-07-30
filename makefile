@@ -52,7 +52,7 @@ tkernel.iso: kernel.bin kerneldump.log
 	@cp ./kernel.bin ./iso/kernel
 	@touch ./tkernel.iso
 	xorriso $(XORRISOFLAGS) ./iso -o ./tkernel.iso \
-	@#  2> /dev/null
+	  2> /dev/null
 	$(V)rm -rf ./iso
 	
 
