@@ -1,9 +1,9 @@
 #include "scheduler.h"
 #include "alloc.h"
 #include "debug.h"
+#include "hal_int.h"
 #include "page.h"
 #include "pcb.h"
-#include "hal_int.h"
 
 int is_scheduler = 0; // 0:disable
                       // 1:enable
@@ -229,14 +229,14 @@ int _scheduler() {
 }
 
 regs_t *tmp;
-__attribute__((interrupt)) void
-timer_handle(struct interrupt_frame *frame) {
+__attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
   // for (int i = 0; i < 5; i++)
   //     printks("frame[%d] = 0x%lx\n", i, frame[i]);
   // __asm__("mov %0,%%rsp\n\tiretq"::"r"(frame):);
   save_regs();
   __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
   current_task->context0.rip = frame->rip;
+  plogk("timer intr cought\n");
   scheduler(frame, tmp);
   restore_regs();
   // ret_from_intr();

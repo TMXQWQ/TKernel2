@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 // #include "alloc.h"
+#include "apic.h"
 #include "bitmap.h"
 #include "debug.h"
 #include "frame.h"
@@ -19,37 +20,50 @@
 #include "scheduler.h"
 #include "switch.h"
 #include "terminal.h"
+#include "utils.h"
 #include "vfs.h"
-#include "apic.h"
 
 int kernel_main() {
   __asm__("cli");
+  {
+    plogk("response of limine:\n");
+    plogk("\trsdp_request:%p\n", rsdp_request.response);
+    plogk("\tkernel_file_request:%p\n", kernel_file_request.response);
+    plogk("\tsmp_request:%p\n", smp_request.response);
+    plogk("\tframebuffer_request:%p\n", framebuffer_request.response);
+    plogk("\tsmbios_request:%p\n", smbios_request.response);
+    plogk("\tmemmap_request:%p\n", memmap_request.response);
+    plogk("\thhdm_request:%p\n", hhdm_request.response);
+    plogk("\tkernel_address_request:%p\n", kernel_address_request.response);
+    plogk("\tentry_point_request:%p\n", entry_point_request.response);
+  }
   // sse_init();
   gdt_setup();
   idt_init();
-  init_frame(); // 初始化内存帧
-  page_init();  // 初始化内存页
+  page_init(); // 初始化内存页
   // init_hhdm();			// 初始化高半区内存映射
   init_heap(); // 初始化内存堆
   // init_terminal();
-  vfs_init();
-  vfs_inode_t *i = vfs_open("/");
-  printks("inode\"/\"\tid:%d\tname:%s\n", i->id, i->name);
-  i = vfs_creat("/test.txt", VFS_FILE);
-  printks("created file:%s\n", i->name);
-  char buf[256] = "12345";
-  char read_buf[256] = {0};
-  vfs_write(i, buf, 6, 0);
-  vfs_read(i, read_buf, 6, 0);
-  printks("vfs_read test:%s\n", read_buf);
-  vfs_printk_ls(&root);
+  init_frame(); // 初始化内存帧
   printks("\n[KERNEL]\tMem Inited!\n");
+  acpi_init();
+  vfs_init();
+  // vfs_inode_t *i = vfs_open("/");
+  // printks("inode\"/\"\tid:%d\tname:%s\n", i->id, i->name);
+  // i = vfs_creat("/test.txt", VFS_FILE);
+  // printks("created file:%s\n", i->name);
+  // char buf[256] = "12345";
+  // char read_buf[256] = {0};
+  // vfs_write(i, buf, 6, 0);
+  // vfs_read(i, read_buf, 6, 0);
+  // printks("vfs_read test:%s\n", read_buf);
+  // vfs_printk_ls(&root);
   init_task();
   printks("\n[KERNEL]\tTask Inited\n");
   current_task = idle_pcb;
   enable_scheduler();
   __asm__("sti");
-  __asm__("int $0x40");
+  // __asm__("int $0x40");
   // switch_to(&(init_pcb->context0),&(idle_pcb->context0));
   while (1) {
     asm volatile("hlt");

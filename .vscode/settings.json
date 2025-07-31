@@ -1,5 +1,7 @@
 {
     "files.associations": {
+        "*.h": "c",
+        "*.cc": "cpp",
         "page.h": "c",
         "compare": "c",
         "cstdlib": "c",
@@ -33,7 +35,8 @@
         "kshell.h": "c",
         "bitmap.h": "c",
         "stdint.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "ratio": "c"
     },
     "clangd.arguments": [
         "--background-index",

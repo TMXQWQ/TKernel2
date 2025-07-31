@@ -7,6 +7,7 @@
 #include "hal.h"
 #include "klibc.h"
 #include "vfs.h"
+#include "acpi.h"
 
 vfs_inode_t *curdir;
 
@@ -93,13 +94,12 @@ int cd(char *cmd) {
     tmp = str;
   }
 
-  if (vfs_basename(tmp, vfs_token_count(tmp))==0)
-  {
+  if (vfs_basename(tmp, vfs_token_count(tmp)) == 0) {
     goto a;
   }
-  
+
   if (strcmp(vfs_search(tmp)->name, vfs_basename(tmp, vfs_token_count(tmp)))) {
-a:
+  a:
     printk("cd:无法访问 '%s': 没有那个文件或目录\r\n", tmp);
     return 0;
   }
@@ -117,6 +117,8 @@ a:
 int kshell() {
   curdir = &root;
   for (;;) {
+    printk("[\t%ld\t]\n", nano_time());
+    continue;
     int count = 0;
     char cmd[256] = {'0'};
     printk("%s > ", curdir->name);

@@ -13,21 +13,21 @@
 #include "string.h"
 
 /* Initialize the memory bitmap */
-void bitmap_init(Bitmap *bitmap, uint8_t *buffer, size_t size) {
+void bitmap_init(bitmap_t *bitmap, uint8_t *buffer, size_t size) {
   bitmap->buffer = buffer;
   bitmap->length = size * 8;
   memset(buffer, 0, size);
 }
 
 /* Get memory bitmap */
-int bitmap_get(const Bitmap *bitmap, size_t index) {
+int bitmap_get(const bitmap_t *bitmap, size_t index) {
   size_t word_index = index / 8;
   size_t bit_index = index % 8;
   return (bitmap->buffer[word_index] >> bit_index) & 1;
 }
 
 /* Setting the memory bitmap */
-void bitmap_set(Bitmap *bitmap, size_t index, int value) // NOLINT
+void bitmap_set(bitmap_t *bitmap, size_t index, int value) // NOLINT
 {
   size_t word_index = index / 8;
   size_t bit_index = index % 8;
@@ -38,7 +38,7 @@ void bitmap_set(Bitmap *bitmap, size_t index, int value) // NOLINT
 }
 
 /* Set the memory bitmap range */
-void bitmap_set_range(Bitmap *bitmap, size_t start, size_t end,
+void bitmap_set_range(bitmap_t *bitmap, size_t start, size_t end,
                       int value) // NOLINT
 {
   if (start >= end || start >= bitmap->length)
@@ -50,9 +50,11 @@ void bitmap_set_range(Bitmap *bitmap, size_t start, size_t end,
   size_t byte_start = start / 8;
   size_t byte_end = end / 8;
   uint8_t fill = value ? 0xff : 0x00;
+
   for (size_t i = byte_start; i < byte_end; i++)
     bitmap->buffer[i] = fill;
   start = byte_end * 8;
+
   while (start < end) {
     bitmap_set(bitmap, start, value);
     start++;
@@ -60,7 +62,7 @@ void bitmap_set_range(Bitmap *bitmap, size_t start, size_t end,
 }
 
 /* Memory bitmap search range */
-size_t bitmap_find_range(const Bitmap *bitmap, size_t length,
+size_t bitmap_find_range(const bitmap_t *bitmap, size_t length,
                          int value) // NOLINT
 {
   size_t count = 0, start_index = 0;

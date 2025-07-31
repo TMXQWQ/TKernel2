@@ -1,62 +1,82 @@
 #include "limine.h"
+#include "utils.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "utils.h"
 extern int kernel_main();
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
 
-__attribute__((
-    used, section(".limine_requests"))) static volatile LIMINE_BASE_REVISION(3);
+__attribute__((used,
+               section(".limine_requests"))) volatile struct limine_rsdp_request
+    rsdp_request = {
+        .id = LIMINE_RSDP_REQUEST,
+        .revision = 0,
+};
 
-// The Limine requests can be placed anywhere, but it is important that
-// the compiler does not optimise them away, so, usually, they should
-// be made volatile or equivalent, _and_ they should be accessed at least
-// once or marked as used with the "used" attribute as done here.
+__attribute__((
+    used,
+    section(".limine_requests"))) volatile struct limine_kernel_file_request
+    kernel_file_request = {
+        .id = LIMINE_KERNEL_FILE_REQUEST,
+        .revision = 0,
+        .response = 0,
+};
 
 __attribute__((
     used,
     section(
-        ".limine_requests"))) volatile struct limine_framebuffer_request
-    framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
+        ".limine_requests"))) volatile struct limine_smp_request smp_request = {
+    .id = LIMINE_SMP_REQUEST,
+    .revision = 0,
+    .response = 0,
+    .flags = 1,
+};
 
-// Finally, define the start and end markers for the Limine requests.
-// These can also be moved anywhere, to any .c file, as seen fit.
+__attribute__((
+    used,
+    section(".limine_requests"))) volatile struct limine_framebuffer_request
+    framebuffer_request = {
+        .id = LIMINE_FRAMEBUFFER_REQUEST,
+        .revision = 0,
+};
+
+__attribute__((
+    used, section(".limine_requests"))) volatile struct limine_smbios_request
+    smbios_request = {
+        .id = LIMINE_SMBIOS_REQUEST,
+};
+
+__attribute__((
+    used, section(".limine_requests"))) volatile struct limine_memmap_request
+    memmap_request = {
+        .id = LIMINE_MEMMAP_REQUEST,
+        .revision = 0,
+};
 
 __attribute__((used,
-               section(".limine_requests_"
-                       "start"))) static volatile LIMINE_REQUESTS_START_MARKER;
+               section(".limine_requests"))) volatile struct limine_hhdm_request
+    hhdm_request = {
+        .id = LIMINE_HHDM_REQUEST,
+        .revision = 0,
+};
 
 __attribute__((
     used,
-    section(
-        ".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
+    section(".limine_requests"))) volatile struct limine_kernel_address_request
+    kernel_address_request = {.id = LIMINE_KERNEL_ADDRESS_REQUEST,
+                              .revision = 0};
 
-__attribute__((used, section(".limine_requests"))) volatile struct limine_rsdp_request rsdp_request = {
-    .id       = LIMINE_RSDP_REQUEST,
-    .revision = 0,
+__attribute__((
+    used,
+    section(".limine_requests"))) volatile struct limine_entry_point_request
+    entry_point_request = {
+        .id = LIMINE_ENTRY_POINT_REQUEST,
+        .revision = 3,
+        .entry = &kernel_main,
 };
-
-__attribute__((used, section(".limine_requests"))) volatile struct limine_kernel_file_request kernel_file_request = {
-    .id       = LIMINE_KERNEL_FILE_REQUEST,
-    .revision = 0,
-    .response = 0,
-};
-
-__attribute__((used, section(".limine_requests"))) volatile struct limine_smp_request smp_request = {
-    .id       = LIMINE_SMP_REQUEST,
-    .revision = 0,
-    .response = 0,
-    .flags    = 1,
-};
-
-__attribute__((used, section(".limine_requests"))) volatile struct limine_smbios_request smbios_request = {
-    .id = LIMINE_SMBIOS_REQUEST,
-};
-
 
 // GCC and Clang reserve the right to generate calls to the following
 // 4 functions even if they are not directly called.

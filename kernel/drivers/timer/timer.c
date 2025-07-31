@@ -16,40 +16,40 @@
 #include "stdint.h"
 
 /* Millisecond-based delay functions */
-void msleep(uint64_t ms)
-{
-    uint64_t target_time = nano_time();
-    uint64_t after       = 0;
-    uint64_t ns          = ms * 1000000;
+void msleep(uint64_t ms) {
+  uint64_t target_time = nano_time();
+  uint64_t after = 0;
+  uint64_t ns = ms * 1000000;
 
-    while (1) {
-        uint64_t n = nano_time();
-        if (n < target_time) {
-            after += 0xffffffff - target_time + n;
-            target_time = n;
-        } else {
-            after += n - target_time;
-            target_time = n;
-        }
-        if (after >= ns) return;
+  while (1) {
+    uint64_t n = nano_time();
+    if (n < target_time) {
+      after += 0xffffffff - target_time + n;
+      target_time = n;
+    } else {
+      after += n - target_time;
+      target_time = n;
     }
+    if (after >= ns)
+      return;
+  }
 }
 
 /* Nanosecond-based delay function */
-void nsleep(uint64_t ns)
-{
-    uint64_t target_time = nano_time();
-    uint64_t after       = 0;
+void nsleep(uint64_t ns) {
+  uint64_t target_time = nano_time();
+  uint64_t after = 0;
 
-    while (1) {
-        uint64_t n = nano_time();
-        if (n < target_time) {
-            after += 0xffffffff - target_time + n;
-            target_time = n;
-        } else {
-            after += n - target_time;
-            target_time = n;
-        }
-        if (after >= ns) return;
+  while (1) {
+    uint64_t n = nano_time();
+    if (n < target_time) {
+      after += 0xffffffff - target_time + n;
+      target_time = n;
+    } else {
+      after += n - target_time;
+      target_time = n;
     }
+    if (after >= ns)
+      return;
+  }
 }

@@ -132,7 +132,7 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   add_task(new_task);
   printks("create kernel thread:%d\n", new_task->pid);
   enable_scheduler();
-  __asm__("sti");
+  // __asm__("sti");
   return new_task;
 }
 
@@ -157,7 +157,9 @@ int init_kmain() {
   //暂时执行调度
 
   while (1) {
+    enable_intr();
     __asm__("int $0x40");
+    plogk("schedule to init\n");
     // __asm__("hlt");
   }
   return 0; // nerver get

@@ -45,23 +45,27 @@ void sti(void) { __asm__ volatile("sti"); }
 void hlt(void) { __asm__ volatile("hlt"); }
 
 //============== 端口IO ==============//
-__attribute__((disable("bugprone-easily-swappable-parameters"))) uint8_t inb(uint16_t port) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) uint8_t
+inb(uint16_t port) {
   uint8_t ret;
   __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
   return ret;
 }
 
-__attribute__((disable("bugprone-easily-swappable-parameters"))) void outb(uint16_t port, uint8_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void
+outb(uint16_t port, uint8_t value) {
   __asm__ volatile("outb %0, %1" ::"a"(value), "Nd"(port));
 }
 
-__attribute__((disable("bugprone-easily-swappable-parameters"))) uint16_t inw(uint16_t port) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) uint16_t
+inw(uint16_t port) {
   uint16_t ret;
   __asm__ volatile("inw %1, %0" : "=a"(ret) : "Nd"(port));
   return ret;
 }
 
-__attribute__((disable("bugprone-easily-swappable-parameters"))) void outw(uint16_t port, uint16_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void
+outw(uint16_t port, uint16_t value) {
   __asm__ volatile("outw %0, %1" ::"a"(value), "Nd"(port));
 }
 
@@ -71,7 +75,8 @@ uint32_t ind(uint16_t port) {
   return ret;
 }
 
-__attribute__((disable("bugprone-easily-swappable-parameters"))) void outd(uint16_t port, uint32_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void
+outd(uint16_t port, uint32_t value) {
   __asm__ volatile("outl %0, %1" ::"a"(value), "Nd"(port));
 }
 
@@ -88,7 +93,8 @@ uint64_t rdmsr(uint32_t msr) {
   return ((uint64_t)high << 32) | low;
 }
 
-__attribute__((disable("bugprone-easily-swappable-parameters"))) void wrmsr(uint32_t msr, uint64_t value) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void
+wrmsr(uint32_t msr, uint64_t value) {
   uint32_t low = value & 0xFFFFFFFF;
   uint32_t high = value >> 32;
   __asm__ volatile("wrmsr" ::"a"(low), "d"(high), "c"(msr));
@@ -102,7 +108,8 @@ void sfence(void) { __asm__ volatile("sfence" ::: "memory"); }
 void lfence(void) { __asm__ volatile("lfence" ::: "memory"); }
 
 // 内联汇编实现的上下文切换
-__attribute__((disable("bugprone-easily-swappable-parameters"))) void switch_context(uint64_t *old_rsp, uint64_t new_rsp) {
+__attribute__((disable("bugprone-easily-swappable-parameters"))) void
+switch_context(uint64_t *old_rsp, uint64_t new_rsp) {
   (void)old_rsp;
   (void)new_rsp;
   __asm__ volatile("pushq %rbp\n" // 保存当前基址指针
