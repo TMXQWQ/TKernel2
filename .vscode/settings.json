@@ -36,7 +36,12 @@
         "bitmap.h": "c",
         "stdint.h": "c",
         "stddef.h": "c",
-        "ratio": "c"
+        "ratio": "c",
+        "chrono": "c",
+        "initializer_list": "c",
+        "ranges": "c",
+        "span": "c",
+        "utility": "c"
     },
     "clangd.arguments": [
         "--background-index",

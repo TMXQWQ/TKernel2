@@ -4,6 +4,8 @@
 #include "hal_int.h"
 #include "page.h"
 #include "pcb.h"
+#include "acpi.h"
+#include "apic.h"
 
 int is_scheduler = 0; // 0:disable
                       // 1:enable
@@ -13,6 +15,8 @@ static list_t *pcb_list = NULL;
 void enable_scheduler() { is_scheduler = 1; }
 
 void disable_scheduler() { is_scheduler = 0; }
+
+int get_scheduler() { return is_scheduler; }
 
 int add_task(pcb_t *new_task) {
   if (pcb_list == NULL) {
@@ -233,13 +237,22 @@ __attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
   // for (int i = 0; i < 5; i++)
   //     printks("frame[%d] = 0x%lx\n", i, frame[i]);
   // __asm__("mov %0,%%rsp\n\tiretq"::"r"(frame):);
+  __asm__("cli");
   save_regs();
   __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
+  if (is_scheduler == 0)
+  {
+    // plogk("timer intr cought and is_scheduler = 0\n");
+    restore_regs();
+    return;
+  }
+  
   current_task->context0.rip = frame->rip;
-  plogk("timer intr cought\n");
+  // plogk("timer intr cought\n");
   scheduler(frame, tmp);
   restore_regs();
   // ret_from_intr();
+  send_eoi();
   return;
 }
 
@@ -258,8 +271,8 @@ int scheduler(struct interrupt_frame *frame, regs_t *regs) {
   next = next->next;
   pcb_t *now = current_task;
   current_task = ((pcb_t *)(next->data));
-  printks("scheduling from pid %d to pid %d\n", now->pid,
-          ((pcb_t *)(next->data))->pid);
+  // printks("scheduling from pid %d to pid %d\n", now->pid,
+  //         ((pcb_t *)(next->data))->pid);
   // printks("pid %d context rip:%p\r\n",now->pid);
   // printks("pid %d context rip:%p\r\n",((pcb_t*)(next->data))->pid);
   switch_to(now, current_task, frame, regs);

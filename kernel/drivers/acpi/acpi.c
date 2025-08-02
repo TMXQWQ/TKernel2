@@ -57,8 +57,7 @@ void *find_table(const char *name) {
 /* Initialize ACPI */
 void acpi_init(void) {
   // rsdp_t *rsdp = (rsdp_t *)rsdp_request.response->address;
-  rsdp_t *rsdp = 
-      (rsdp_t *)rsdp_request.response->address; // 0xffff800007b7e014
+  rsdp_t *rsdp = (rsdp_t *)rsdp_request.response->address; // 0xffff800007b7e014
   if (!rsdp) {
     plogk("acpi: RSDP not found.\n");
     return;

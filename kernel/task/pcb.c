@@ -93,6 +93,7 @@ void switch_to_user_mode(uint64_t func) {
 
 pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   __asm__("cli");
+  int s = get_scheduler();
   disable_scheduler();
   pcb_t *new_task = (pcb_t *)malloc(KERNEL_ST_SZ);
   // printks("[Kernel_thread]new_task address:\t%p\r\n",new_task);
@@ -131,8 +132,12 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   new_task->cr3 = read_cr3();
   add_task(new_task);
   printks("create kernel thread:%d\n", new_task->pid);
-  enable_scheduler();
-  // __asm__("sti");
+  if (s == 1)
+  {
+    enable_scheduler();
+  }
+  
+  __asm__("sti");
   return new_task;
 }
 
@@ -145,8 +150,9 @@ int init_user_main() {
 
 int init_kmain() {
   printks("[INFO]Init process is running.\n");
+  enable_scheduler();
   // 创建内核线程kshell
-  create_kernel_thread(kshell, NULL, "Kernel shell");
+  // create_kernel_thread(kshell, NULL, "Kernel shell");
   // 加载init进程到内存中
   // page_map_to(get_current_directory, 0x405840, virt_to_phys(&init_user_main),
   //             PTE_USER || PTE_PRESENT || PTE_WRITEABLE);
@@ -158,9 +164,9 @@ int init_kmain() {
 
   while (1) {
     enable_intr();
-    __asm__("int $0x40");
+    // __asm__("int $0x40");
     plogk("schedule to init\n");
-    // __asm__("hlt");
+    __asm__("hlt");
   }
   return 0; // nerver get
 }

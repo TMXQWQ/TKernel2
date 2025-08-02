@@ -4,7 +4,6 @@
 #include "ctype.h"
 #include "description_table.h"
 #include "hal.h"
-#include "kernel.h"
 #include "os_terminal.h"
 #include <stdint.h>
 #include <string.h>
@@ -58,12 +57,13 @@ int kernel_main() {
   // vfs_read(i, read_buf, 6, 0);
   // printks("vfs_read test:%s\n", read_buf);
   // vfs_printk_ls(&root);
+  disable_scheduler();
   init_task();
   printks("\n[KERNEL]\tTask Inited\n");
   current_task = idle_pcb;
   enable_scheduler();
   __asm__("sti");
-  // __asm__("int $0x40");
+  __asm__("int $0x40");
   // switch_to(&(init_pcb->context0),&(idle_pcb->context0));
   while (1) {
     asm volatile("hlt");

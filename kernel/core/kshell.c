@@ -2,12 +2,12 @@
  *debug用的shell
  */
 #include "kshell.h"
+#include "acpi.h"
 #include "alloc.h"
 #include "debug.h"
 #include "hal.h"
 #include "klibc.h"
 #include "vfs.h"
-#include "acpi.h"
 
 vfs_inode_t *curdir;
 
@@ -117,8 +117,6 @@ int cd(char *cmd) {
 int kshell() {
   curdir = &root;
   for (;;) {
-    printk("[\t%ld\t]\n", nano_time());
-    continue;
     int count = 0;
     char cmd[256] = {'0'};
     printk("%s > ", curdir->name);

@@ -10,6 +10,8 @@ void enable_scheduler();
 
 void disable_scheduler();
 
+int get_scheduler();
+
 int scheduler(struct interrupt_frame *frame, regs_t* regs);
 
 __attribute__((interrupt))

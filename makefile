@@ -63,7 +63,7 @@ run_db: tkernel.iso
 	qemu-system-x86_64 $(QEMU_KVM) $(QEMU_FLAGS) -no-reboot -d in_asm,int -D qemu.log
 
 run_gdb: tkernel.iso
-	qemu-system-x86_64 $(QEMU_KVM) $(QEMU_FLAGS) -no-reboot -serial stdio -S -s
+	qemu-system-x86_64 $(QEMU_KVM) $(QEMU_FLAGS) -no-reboot -serial stdio -S -s -d in_asm,int -D qemu.log
 
 format: $(C_SOURCES:%=%.fmt) $(S_SOURCES:%=%.fmt) $(HEADERS:%=%.fmt)
 	$(Q)printf "\033[1;32m[Done]\033[0m Code Format complete.\n\n"

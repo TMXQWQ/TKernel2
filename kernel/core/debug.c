@@ -307,7 +307,7 @@ void plogk(const char *format, ...) {
   static char buff[1024];
   va_list args;
   int i;
-
+  printk("[\t%ld\t]", nano_time());
   va_start(args, format);
   i = vsprintf(buff, format, args);
   va_end(args);
@@ -315,5 +315,4 @@ void plogk(const char *format, ...) {
   // terminal_process(buff);
   // terminal_process("\r\n");
   io_printf(buff);
-  return 0;
 }
