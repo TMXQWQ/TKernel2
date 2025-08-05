@@ -19,6 +19,7 @@
 #include "scheduler.h"
 #include "switch.h"
 #include "terminal.h"
+#include "tty.h"
 #include "utils.h"
 #include "vfs.h"
 
@@ -57,6 +58,9 @@ int kernel_main() {
   // vfs_read(i, read_buf, 6, 0);
   // printks("vfs_read test:%s\n", read_buf);
   // vfs_printk_ls(&root);
+  driver *d = malloc(sizeof(driver));
+  // tty_write(tty_ioctl(tty_open(d, 0), 0, "set", ), NULL, "hello world\n",
+  //           strlen("hello world\n"), 0);
   disable_scheduler();
   init_task();
   printks("\n[KERNEL]\tTask Inited\n");

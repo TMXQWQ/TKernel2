@@ -1,3 +1,5 @@
+VERBOSE	:= 1
+
 ifeq ($(VERBOSE), 1)
   V=
   Q=
@@ -17,6 +19,9 @@ QEMU_OUT := -serial stdio $(QEMU_reOUT)
 CHECKS         := -quiet -checks=-*,clang-analyzer-*,bugprone-*,cert-*,misc-*,performance-*,portability-*,-misc-include-cleaner,-clang-analyzer-security.insecureAPI.*
 C_FLAGS		:= -Wall -Wextra -g3 -O0 -m64 -fno-builtin -fno-pie -fno-stack-protector -fno-sanitize=undefined \
                -mcmodel=large -mno-red-zone -mno-80387 $(C_FPU_MMX_SSE_FLAGS) -msoft-float -I include -MMD -I ./kernel/inc ./kernel
+OIB			:= $(shell find -name oib)
+UNAME		:= $(shell command -v uname)
+
 
 info: 
 	@printf "\033[1;32m[INFO]\033[0m";
@@ -80,3 +85,27 @@ format: $(C_SOURCES:%=%.fmt) $(S_SOURCES:%=%.fmt) $(HEADERS:%=%.fmt)
 
 check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
 	$(Q)printf "\033[1;32m[Done]\033[0m Code Checks complete.\n\n"
+
+initrd.fd: $(C_SOURCES) tools/bin/oib
+	$(OIB) --help
+	
+
+
+tools/bin/oib:
+ifndef OIB
+	$(Q)printf "\033[1;32m[ERROR]\033[0m No OIB installed! ...\n";
+	$(Q)echo "now try download from internet"
+	$(Q)mkdir -p tmp
+ifndef UNAME
+	$(Q)curl https://github.com/wenxuanjun/oib/releases/download/v0.3.0/oib-x86_64-pc-windows-msvc.zip -o ./tmp/oib.zip
+	$(Q)7z x ./tmp/oib.zip
+else
+	$(Q)curl -L -v https://github.com/wenxuanjun/oib/releases/download/v0.3.0/oib-x86_64-unknown-linux-gnu.tar.gz -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o ./tmp/oib.tar.gz
+	$(Q)tar -zxvf ./tmp/oib.tar.gz oib-x86_64-unknown-linux-gnu/oib
+	$(Q)cp ./oib-x86_64-unknown-linux-gnu/oib ./tools/bin
+	$(Q)rm -r oib-x86_64-unknown-linux-gnu
+	$(Q)rm -r tmp
+	$(Q)chmod +x tools/bin/oib
+OIB			:= $(shell find -name oib)
+endif
+endif

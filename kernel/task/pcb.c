@@ -132,11 +132,10 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   new_task->cr3 = read_cr3();
   add_task(new_task);
   printks("create kernel thread:%d\n", new_task->pid);
-  if (s == 1)
-  {
+  if (s == 1) {
     enable_scheduler();
   }
-  
+
   __asm__("sti");
   return new_task;
 }

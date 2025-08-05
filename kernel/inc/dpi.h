@@ -10,6 +10,7 @@
  */
 #pragma once
 #include "stdint.h"
+#define MAX_DRIVER_NUM (0x20)
 
 #define BUILD_DRIVER_HANDLE(name) \
         driver *name##_open(driver *d, uint64_t index);  \
@@ -59,4 +60,9 @@ typedef struct Driver //驱动结构体
         uint8_t present;       //是否有效
         driver_handle *handle; //处理程序
         void* private;  //私有数据(可选)
+        uint64_t id;
 } driver;
+
+driver* reg_driver(driver* d);  //注册一个驱动
+driver* get_driver(const char* str);    //获取驱动指针
+

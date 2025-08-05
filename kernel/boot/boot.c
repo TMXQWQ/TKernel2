@@ -74,8 +74,21 @@ __attribute__((
     section(".limine_requests"))) volatile struct limine_entry_point_request
     entry_point_request = {
         .id = LIMINE_ENTRY_POINT_REQUEST,
-        .revision = 3,
+        .revision = 3, 
         .entry = &kernel_main,
+};
+
+static volatile struct limine_internal_module initrd_module = {
+  .flags = LIMINE_INTERNAL_MODULE_REQUIRED,
+};
+
+__attribute__((
+    used,
+    section(".limine_requests"))) volatile struct limine_module_request module_request = {
+      .id = LIMINE_MODULE_REQUEST,
+      .revision = 1,
+      .internal_module_count = 1,
+      .internal_modules = &initrd_module,
 };
 
 // GCC and Clang reserve the right to generate calls to the following

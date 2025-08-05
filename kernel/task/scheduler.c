@@ -1,11 +1,11 @@
 #include "scheduler.h"
+#include "acpi.h"
 #include "alloc.h"
+#include "apic.h"
 #include "debug.h"
 #include "hal_int.h"
 #include "page.h"
 #include "pcb.h"
-#include "acpi.h"
-#include "apic.h"
 
 int is_scheduler = 0; // 0:disable
                       // 1:enable
@@ -240,19 +240,19 @@ __attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
   __asm__("cli");
   save_regs();
   __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
-  if (is_scheduler == 0)
-  {
+  if (is_scheduler == 0) {
     // plogk("timer intr cought and is_scheduler = 0\n");
+    send_eoi();
     restore_regs();
     return;
   }
-  
+
   current_task->context0.rip = frame->rip;
   // plogk("timer intr cought\n");
   scheduler(frame, tmp);
-  restore_regs();
   // ret_from_intr();
   send_eoi();
+  restore_regs();
   return;
 }
 
@@ -377,7 +377,18 @@ void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
   regs->rdx = new->rdx;
   regs->rbp = new->rbp;
   regs->rsi = new->rsi;
+  // regs->_rsp = new->rsp;
   regs->rdi = new->rdi;
+  // if (regs->_rsp != old->rsp)
+  // {
+  //   struct interrupt_frame* p = ((struct
+  //   interrupt_frame*)((regs->_rsp)-=sizeof(frame))); p->cs = frame->cs;
+  //   p->rflags = frame->rflags;
+  //   p->rip = frame->rflags;
+  //   p->rsp = frame->rsp;
+  //   p->ss = frame->ss;
+  // }
+
   // uint64_t* rsp;
   // __asm__("mov %%rsp,%0"::"r"(rsp):);
   // printks("RSP before iretq: %p\n", rsp);

@@ -30,7 +30,11 @@ driver *tty_close(driver *d, uint64_t index) { return d = NULL; }
 driver *tty_read(driver *d, const char *minor, void *buf, uint64_t size,
                  uint64_t offset);
 driver *tty_write(driver *d, const char *minor, const void *buf, uint64_t size,
-                  uint64_t offset);
+                  uint64_t offset) {
+  if (d == NULL)
+    return NULL;
+  return d->handle->write(d, minor, buf, size, offset);
+}
 driver *tty_map(driver *d, const char *minor) { return NULL; }
 driver *tty_ioctl(driver *d, const char *minor, const char *cmd, ...) {
   if (d == NULL) {
@@ -41,7 +45,7 @@ driver *tty_ioctl(driver *d, const char *minor, const char *cmd, ...) {
   if (!strcmp(cmd, "set")) {
     va_list args;
     va_start(args, cmd);
-    driver *type = va_arg(args, driver *);
+    char *type = va_arg(args, char *);
     if (!(p->d = type))
       return NULL;
     va_end(args);

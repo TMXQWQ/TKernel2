@@ -61,3 +61,5 @@ make.log
 *.bak
 *.log
 
+tools/*
+tools/bin/*
