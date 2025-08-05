@@ -1,4 +1,4 @@
-VERBOSE	:= 1
+# VERBOSE	:= 1
 
 ifeq ($(VERBOSE), 1)
   V=
@@ -49,9 +49,11 @@ kerneldump.log: kernel.bin
 
 clean:	
 	$(V)make clean -C kernel
+	$(V)rm -r tools
+	$(V)rm initrd.fd
 	$(V)rm  -f ./kernel.bin ./tkernel.iso ./vkernel.bin
 
-tkernel.iso: kernel.bin kerneldump.log
+tkernel.iso: kernel.bin kerneldump.log initrd.fd
 	@mkdir -p iso
 	@cp -r ./assets/rootfs/* ./iso/
 	@cp ./kernel.bin ./iso/kernel
@@ -87,11 +89,13 @@ check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
 	$(Q)printf "\033[1;32m[Done]\033[0m Code Checks complete.\n\n"
 
 initrd.fd: $(C_SOURCES) tools/bin/oib
-	$(OIB) --help
-	
+	$(Q)mkdir -p ./initrd
+	$(V)$(OIB) -d initrd:/ -o ./initrd.fd
+	$(Q)rm -r ./initrd
 
 
 tools/bin/oib:
+	mkdir -p ./tools/bin
 ifndef OIB
 	$(Q)printf "\033[1;32m[ERROR]\033[0m No OIB installed! ...\n";
 	$(Q)echo "now try download from internet"
@@ -106,6 +110,6 @@ else
 	$(Q)rm -r oib-x86_64-unknown-linux-gnu
 	$(Q)rm -r tmp
 	$(Q)chmod +x tools/bin/oib
-OIB			:= $(shell find -name oib)
+	OIB = $(shell find -name oib)
 endif
 endif
