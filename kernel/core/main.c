@@ -10,6 +10,7 @@
 // #include "alloc.h"
 #include "apic.h"
 #include "bitmap.h"
+#include "cpio.h"
 #include "debug.h"
 #include "frame.h"
 #include "heap.h"
@@ -22,6 +23,7 @@
 #include "tty.h"
 #include "utils.h"
 #include "vfs.h"
+#include "video.h"
 
 int kernel_main() {
   __asm__("cli");
@@ -61,7 +63,16 @@ int kernel_main() {
   driver *d = malloc(sizeof(driver));
   // tty_write(tty_ioctl(tty_open(d, 0), 0, "set", ), NULL, "hello world\n",
   //           strlen("hello world\n"), 0);
+  video_init();
+  for (uint64_t i = 0;
+       i < (default_video_buf.info.height) * (default_video_buf.info.width);
+       i++) {
+    *((uint32_t *)(default_video_buf.back) + i) = 0x00ffffff;
+  }
+  video_flush(&default_video_buf);
   disable_scheduler();
+  // plogk("[Initrd]%s:%p\n", module_request.response->modules[0]->path,
+  // module_request.response->modules[0]->address); printk("\n");
   init_task();
   printks("\n[KERNEL]\tTask Inited\n");
   current_task = idle_pcb;

@@ -10,8 +10,8 @@ driver *reg_driver(driver *d) {
   }
   if (d->present != 1) {
     if (driver_list[d->index].name == d->name) {
-        d->present = 1;
-        return d;
+      d->present = 1;
+      return d;
     }
     for (register uint_fast64_t i = 0; i < MAX_DRIVER_NUM; i++) {
       if (driver_list[i].name == d->name) {

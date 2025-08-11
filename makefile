@@ -49,16 +49,16 @@ kerneldump.log: kernel.bin
 
 clean:	
 	$(V)make clean -C kernel
-	$(V)rm -r tools
-	$(V)rm initrd.fd
+	$(V)rm initrd.img
 	$(V)rm  -f ./kernel.bin ./tkernel.iso ./vkernel.bin
 
-tkernel.iso: kernel.bin kerneldump.log initrd.fd
-	@mkdir -p iso
-	@cp -r ./assets/rootfs/* ./iso/
-	@cp ./kernel.bin ./iso/kernel
-	@touch ./tkernel.iso
-	xorriso $(XORRISOFLAGS) ./iso -o ./tkernel.iso \
+tkernel.iso: kernel.bin kerneldump.log initrd.img
+	$(Q)mkdir -p iso
+	$(Q)cp -r ./assets/rootfs/* ./iso/
+	$(Q)cp ./kernel.bin ./iso/kernel
+	$(Q)cp ./initrd.img ./iso
+	$(Q)touch ./tkernel.iso
+	$(Q)xorriso $(XORRISOFLAGS) ./iso -o ./tkernel.iso \
 	  2> /dev/null
 	$(V)rm -rf ./iso
 	
@@ -88,28 +88,28 @@ format: $(C_SOURCES:%=%.fmt) $(S_SOURCES:%=%.fmt) $(HEADERS:%=%.fmt)
 check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
 	$(Q)printf "\033[1;32m[Done]\033[0m Code Checks complete.\n\n"
 
-initrd.fd: $(C_SOURCES) tools/bin/oib
+initrd.img: $(C_SOURCES)
 	$(Q)mkdir -p ./initrd
-	$(V)$(OIB) -d initrd:/ -o ./initrd.fd
+	$(V)find ./initrd -depth | cpio -ov -H newc > initrd.img
 	$(Q)rm -r ./initrd
 
 
-tools/bin/oib:
-	mkdir -p ./tools/bin
-ifndef OIB
-	$(Q)printf "\033[1;32m[ERROR]\033[0m No OIB installed! ...\n";
-	$(Q)echo "now try download from internet"
-	$(Q)mkdir -p tmp
-ifndef UNAME
-	$(Q)curl https://github.com/wenxuanjun/oib/releases/download/v0.3.0/oib-x86_64-pc-windows-msvc.zip -o ./tmp/oib.zip
-	$(Q)7z x ./tmp/oib.zip
-else
-	$(Q)curl -L -v https://github.com/wenxuanjun/oib/releases/download/v0.3.0/oib-x86_64-unknown-linux-gnu.tar.gz -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o ./tmp/oib.tar.gz
-	$(Q)tar -zxvf ./tmp/oib.tar.gz oib-x86_64-unknown-linux-gnu/oib
-	$(Q)cp ./oib-x86_64-unknown-linux-gnu/oib ./tools/bin
-	$(Q)rm -r oib-x86_64-unknown-linux-gnu
-	$(Q)rm -r tmp
-	$(Q)chmod +x tools/bin/oib
-	OIB = $(shell find -name oib)
-endif
-endif
+# tools/bin/oib:
+# 	mkdir -p ./tools/bin
+# ifndef OIB
+# 	$(Q)printf "\033[1;32m[ERROR]\033[0m No OIB installed! ...\n";
+# 	$(Q)echo "now try download from internet"
+# 	$(Q)mkdir -p tmp
+# ifndef UNAME
+# 	$(Q)curl https://github.com/wenxuanjun/oib/releases/download/v0.3.0/oib-x86_64-pc-windows-msvc.zip -o ./tmp/oib.zip
+# 	$(Q)7z x ./tmp/oib.zip
+# else
+# 	$(Q)curl -L -v https://github.com/wenxuanjun/oib/releases/download/v0.3.0/oib-x86_64-unknown-linux-gnu.tar.gz -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -o ./tmp/oib.tar.gz
+# 	$(Q)tar -zxvf ./tmp/oib.tar.gz oib-x86_64-unknown-linux-gnu/oib
+# 	$(Q)cp ./oib-x86_64-unknown-linux-gnu/oib ./tools/bin
+# 	$(Q)rm -r oib-x86_64-unknown-linux-gnu
+# 	$(Q)rm -r tmp
+# 	$(Q)chmod +x tools/bin/oib
+# 	OIB = $(shell find -name oib)
+# endif
+# endif

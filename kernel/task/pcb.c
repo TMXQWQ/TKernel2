@@ -95,7 +95,7 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   __asm__("cli");
   int s = get_scheduler();
   disable_scheduler();
-  pcb_t *new_task = (pcb_t *)malloc(KERNEL_ST_SZ);
+  pcb_t *new_task = (pcb_t *)calloc(1, KERNEL_ST_SZ);
   // printks("[Kernel_thread]new_task address:\t%p\r\n",new_task);
   // printks("[Kernel_thread]name:\t%s\r\n",name);
   // printks("[Kernel_thread]name address:\t%p\r\n",name);
@@ -164,7 +164,7 @@ int init_kmain() {
   while (1) {
     enable_intr();
     // __asm__("int $0x40");
-    plogk("schedule to init\n");
+    // plogk("schedule to init\n");
     __asm__("hlt");
   }
   return 0; // nerver get

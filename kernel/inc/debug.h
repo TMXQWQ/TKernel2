@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vargs.h"
+#include "stdint.h"
 
 int panic(const char* msg,...);
 
@@ -11,3 +12,9 @@ int printks(const char* format,...);
 int vsprintf(char *buff, const char *format, va_list args);
 
 void plogk(const char* format,...);
+
+char *number(char *str, int64_t num, int base, int size, int precision,
+             int type);
+
+int skip_atoi(const char **s);
+

@@ -74,21 +74,21 @@ __attribute__((
     section(".limine_requests"))) volatile struct limine_entry_point_request
     entry_point_request = {
         .id = LIMINE_ENTRY_POINT_REQUEST,
-        .revision = 3, 
+        .revision = 3,
         .entry = &kernel_main,
 };
 
 static volatile struct limine_internal_module initrd_module = {
-  .flags = LIMINE_INTERNAL_MODULE_REQUIRED,
+    .flags = LIMINE_INTERNAL_MODULE_REQUIRED,
 };
 
 __attribute__((
-    used,
-    section(".limine_requests"))) volatile struct limine_module_request module_request = {
-      .id = LIMINE_MODULE_REQUEST,
-      .revision = 1,
-      .internal_module_count = 1,
-      .internal_modules = &initrd_module,
+    used, section(".limine_requests"))) volatile struct limine_module_request
+    module_request = {
+        .id = LIMINE_MODULE_REQUEST,
+        .revision = 1,
+        .internal_module_count = 1,
+        .internal_modules = &initrd_module,
 };
 
 // GCC and Clang reserve the right to generate calls to the following
@@ -191,11 +191,11 @@ void kmain(void) {
   // }
   // struct limine_framebuffer *fb =
   // framebuffer_request.response->framebuffers[0]; framebuffer = fb; Note: we
-  // assume the framebuffer model is RGB with 32-bit pixels. for (size_t i = 0;
-  // i < 100; i++) {
-  //     volatile uint32_t *fb_ptr = framebuffer->address;
-  //     fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
-  // }
+  // assume the framebuffer model is RGB with 32-bit pixels.
+  for (size_t i = 0; i < 100; i++) {
+    volatile uint32_t *fb_ptr = framebuffer->address;
+    fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
+  }
   framebuffer = framebuffer_request.response->framebuffers[0];
   // We're done, just hang...
   asm("jmp kernel_main");
