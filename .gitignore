@@ -44,8 +44,9 @@
 *.pdb
 
 # Project Objectives
-UxImage
-Uinxed-x64.iso
+initrd.img
+kernel.bin
+tkernel.iso
 
 # Clangd
 .clangd

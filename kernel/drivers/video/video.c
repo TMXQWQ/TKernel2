@@ -28,7 +28,7 @@ int video_init() {
   _V(blue_mask_shift);
 #undef _V(a)
   default_video_buf.front = f->address;
-  default_video_buf.back = (void *)malloc(f->height * f->width);
+  default_video_buf.back = (void *)malloc(f->height * f->width * 4);
   if (default_video_buf.back == NULL) {
     panic("falied alloc default_video_buf.back\n");
   }
@@ -39,7 +39,7 @@ int video_init() {
 }
 
 int video_flush(vidbuf *buf) {
-  plogk("flush video. info:\n\tfront:%p\n\tback:%p\n\th:%ld\tw:%ld\n", buf->front,
-        buf->back, buf->info.height, buf->info.width);
+  plogk("flush video. info:\n\tfront:%p\n\tback:%p\n\th:%ld\tw:%ld\n",
+        buf->front, buf->back, buf->info.height, buf->info.width);
   return memcpy(buf->front, buf->back, buf->info.height * buf->info.width * 4);
 }
