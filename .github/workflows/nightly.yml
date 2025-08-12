@@ -38,7 +38,7 @@ jobs:
       - name: Release artifacts
         uses: softprops/action-gh-release@v2
         with:
-          name: nightly-${{ steps.date.outputs.date }}-(${{ github.sha }})
+          name: nightly-build
           tag_name: nightly-${{ steps.date.outputs.date }}-${{ github.run_id }}
           prerelease: true
           files: |
