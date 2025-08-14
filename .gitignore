@@ -47,6 +47,7 @@
 initrd.img
 kernel.bin
 tkernel.iso
+vkernel.bin
 
 # Clangd
 .clangd
