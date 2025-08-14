@@ -20,11 +20,11 @@
 #include "scheduler.h"
 #include "switch.h"
 #include "terminal.h"
+#include "timer.h"
 #include "tty.h"
 #include "utils.h"
 #include "vfs.h"
 #include "video.h"
-#include "timer.h"
 
 int kernel_main() {
   __asm__("cli");
@@ -65,15 +65,6 @@ int kernel_main() {
   // tty_write(tty_ioctl(tty_open(d, 0), 0, "set", ), NULL, "hello world\n",
   //           strlen("hello world\n"), 0);
   video_init();
-  uint32_t a=0;
-  for (uint64_t i = 0;
-       i < (default_video_buf.info.height) * (default_video_buf.info.width);
-       i++) {
-        a &= ~0xff000000;
-        a^=~0;
-    *((uint32_t *)(default_video_buf.back) + i) = a;
-  }
-  video_flush(&default_video_buf);
   disable_scheduler();
   // plogk("[Initrd]%s:%p\n", module_request.response->modules[0]->path,
   // module_request.response->modules[0]->address); printk("\n");

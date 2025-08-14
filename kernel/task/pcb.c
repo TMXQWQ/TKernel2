@@ -159,13 +159,11 @@ int init_kmain() {
   // TODO
   // 跳转到init进程
   // switch_to_user_mode(init_user_main);
-  //暂时执行调度
-
   while (1) {
     enable_intr();
     // __asm__("int $0x40");
-    // plogk("schedule to init\n");
-    __asm__("hlt");
+    plogk("schedule to init\n");
+    // __asm__("hlt");
   }
   return 0; // nerver get
 }

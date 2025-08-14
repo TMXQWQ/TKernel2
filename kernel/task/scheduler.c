@@ -204,39 +204,11 @@ void remove_task_from_ready_queue(pcb_t *task) {
   }
 }
 
-// 调度器实现(未完成)
-int _scheduler() {
-  __asm__("cli");
-  if (is_scheduler == 0 && get_current_task()->time != 0) {
-    return 1; // 禁止抢占
-  }
-
-  // 获取下一个任务（不移除）
-  pcb_t *next_task = peek_next_ready_task();
-
-  // 如果没有就绪任务，使用空闲任务
-  if (next_task == NULL) {
-    next_task = idle_pcb;
-  }
-
-  // 从就绪队列移除（如果是非空闲任务）
-  if (next_task != idle_pcb) {
-    remove_task_from_ready_queue(next_task);
-  }
-
-  // 切换上下文
-  pcb_t *current = get_current_task();
-  // current_task=next_task;
-  // switch_to(&current->context0, &next_task->context0);
-  __asm__("sti");
-  return 0;
-}
-
-regs_t *tmp;
 __attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
   // for (int i = 0; i < 5; i++)
   //     printks("frame[%d] = 0x%lx\n", i, frame[i]);
   // __asm__("mov %0,%%rsp\n\tiretq"::"r"(frame):);
+  static regs_t *tmp;
   __asm__("cli");
   save_regs();
   __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
@@ -252,6 +224,13 @@ __attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
   scheduler(frame, tmp);
   // ret_from_intr();
   send_eoi();
+  if (frame->cs == 0x20) {
+    __asm__ __volatile__(restore_regs_asm
+                         "mov %0, %%rsp\t\n"
+                         "retq" ::"r"(current_task->context0.rsp)
+                         :);
+  }
+
   restore_regs();
   return;
 }
@@ -305,7 +284,13 @@ void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
 
   // 保存旧任务栈指针
   // __asm__ __volatile__("mov %%rsp, %0" : "=m"(old->rsp));
+  if (frame->cs == 0x20) {
+    old->rsp = frame - sizeof(struct interrupt_frame);
+    goto skip;
+  }
+
   old->rsp = frame->rsp;
+skip:
   // uint64_t* rsp;
   // __asm__("mov %%rsp,%0"::"r"(rsp):);
   // printks("RSP before iretq: %p\n", rsp);
@@ -358,9 +343,11 @@ void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
   // cheat_from_intr(new_regs.rip,new_regs.cs,new->rsp);
   frame->rip = new_regs.rip;
   frame->cs = new_regs.cs;
-  frame->ss = new_regs.ss;
   frame->rflags = new_regs.rflags;
-  frame->rsp = new_regs.rsp;
+  if (frame->cs == 0x20) {
+    frame->rsp = new_regs.rsp;
+    frame->ss = new_regs.ss;
+  }
   // 伪造寄存器上下文
   // CHEAT_REGS((&new_regs));
   regs->r15 = new->r15;
@@ -377,7 +364,6 @@ void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
   regs->rdx = new->rdx;
   regs->rbp = new->rbp;
   regs->rsi = new->rsi;
-  // regs->_rsp = new->rsp;
   regs->rdi = new->rdi;
   // if (regs->_rsp != old->rsp)
   // {

@@ -145,6 +145,36 @@ void switch_to(pcb_t* source, pcb_t* target,struct interrupt_frame *frame, regs_
     "add $0x10,%rsp\n\t"         /* 跳过error code,v */ \
     )
 
+#define restore_regs_asm  \
+    /* 恢复段寄存器 */ \
+    "popq %%rax\n\t"         \
+    "mov %%ax, %%ds\n\t"     /* 恢复 DS */ \
+    "popq %%rax\n\t"         \
+    "mov %%ax, %%es\n\t"     /* 恢复 ES */ \
+    "popq %%rax\n\t"         \
+    "mov %%ax, %%fs\n\t"     /* 恢复 FS */ \
+    "popq %%rax\n\t"         \
+    "mov %%ax, %%gs\n\t"     /* 恢复 GS */ \
+    \
+    "popq %%rax\n\t"         /* 恢复 RAX */ \
+    "popq %%rbx\n\t"         /* 恢复 RBX */ \
+    "popq %%rcx\n\t"         /* 恢复 RCX */ \
+    "popq %%rdx\n\t"         /* 恢复 RDX */ \
+    "popq %%rbp\n\t"         /* 恢复 RBP */ \
+    "popq %%rsi\n\t"         /* 恢复 RSI */ \
+    "popq %%rdi\n\t"         /* 恢复 RDI */ \
+    "popq %%r8\n\t"          /* 恢复 R8 */ \
+    "popq %%r9\n\t"          /* 恢复 R9 */ \
+    "popq %%r10\n\t"         /* 恢复 R10 */ \
+    "popq %%r11\n\t"         /* 恢复 R11 */ \
+    "popq %%r12\n\t"         /* 恢复 R12 */ \
+    "popq %%r13\n\t"         /* 恢复 R13 */ \
+    "popq %%r14\n\t"         /* 恢复 R14 */ \
+    "popq %%r15\n\t"         /* 恢复 R15 */ \
+    \
+    "add $0x10,%%rsp\n\t"         /* 跳过error code,v */ 
+
+
 #define ret_from_intr() __asm__ __volatile__( \
     "nop\n\t" \
     "mov -0x8(%rbp),%rax\n\t" \

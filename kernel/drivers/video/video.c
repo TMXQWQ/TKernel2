@@ -43,3 +43,7 @@ int video_flush(vidbuf *buf) {
         buf->front, buf->back, buf->info.height, buf->info.width);
   return memcpy(buf->front, buf->back, buf->info.height * buf->info.width * 4);
 }
+
+int flush_thread(vidbuf *buf, uint32_t start, uint32_t end) {
+  memcpy(buf->front + start, buf->back + start, end - start);
+}
