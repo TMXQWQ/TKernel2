@@ -123,6 +123,7 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   new_task->context0.rip = (uint64_t)_start;
   new_task->context0.rsp =
       (uint64_t)new_task + STACK_SIZE - sizeof(uint64_t) * 3; // 设置上下文
+  new_task->context0.rdi = (uint64_t)args;
   new_task->kernel_stack = (new_task->context0.rsp &= ~0xF); // 栈16字节对齐
   new_task->user_stack =
       new_task->kernel_stack; // 内核级线程没有用户态的部分,
@@ -147,8 +148,8 @@ int init_user_main() {
   }
 }
 
-int init_kmain() {
-  printks("[INFO]Init process is running.\n");
+int init_kmain(int* test) {
+  printks("[INFO]Init process is running. test=%p\n", test);
   enable_scheduler();
   // 创建内核线程kshell
   // create_kernel_thread(kshell, NULL, "Kernel shell");
@@ -162,8 +163,8 @@ int init_kmain() {
   while (1) {
     enable_intr();
     // __asm__("int $0x40");
-    plogk("schedule to init\n");
-    // __asm__("hlt");
+    // plogk("schedule to init\n");
+    __asm__("hlt");
   }
   return 0; // nerver get
 }
@@ -171,7 +172,7 @@ int init_kmain() {
 pcb_t *init_task() {
   idle_pcb = create_kernel_thread(idle_thread, NULL, "System(idle)");
   idle_pcb->level = 3;
-  init_pcb = create_kernel_thread(init_kmain, NULL, "init");
+  init_pcb = create_kernel_thread(init_kmain, &(idle_pcb->pid), "init");
   current_task = idle_pcb;
   printks("idle stack: %p\tinit stack:%p\n\t", idle_pcb->context0.rsp,
           init_pcb->context0.rsp);

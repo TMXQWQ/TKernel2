@@ -224,10 +224,10 @@ __attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
   scheduler(frame, tmp);
   // ret_from_intr();
   send_eoi();
-  if (frame->cs == 0x20) {
+  if (frame->cs == 0x8) {
     __asm__ __volatile__(restore_regs_asm
                          "mov %0, %%rsp\t\n"
-                         "retq" ::"r"(current_task->context0.rsp)
+                         "retq" ::"m"(current_task->context0.rsp)
                          :);
   }
 
@@ -284,7 +284,7 @@ void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
 
   // 保存旧任务栈指针
   // __asm__ __volatile__("mov %%rsp, %0" : "=m"(old->rsp));
-  if (frame->cs == 0x20) {
+  if (frame->cs == 0x8) {
     old->rsp = frame - sizeof(struct interrupt_frame);
     goto skip;
   }
@@ -344,7 +344,7 @@ skip:
   frame->rip = new_regs.rip;
   frame->cs = new_regs.cs;
   frame->rflags = new_regs.rflags;
-  if (frame->cs == 0x20) {
+  if (frame->cs == 0x8) {
     frame->rsp = new_regs.rsp;
     frame->ss = new_regs.ss;
   }
