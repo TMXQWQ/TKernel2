@@ -49,7 +49,14 @@ void tss_setup() {
   gdt_entries[6] = high_base;
 
   tss0.ist[0] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
-
+  tss0.ist[1] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
+  tss0.ist[2] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
+  tss0.ist[3] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
+  tss0.ist[4] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
+  tss0.ist[5] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
+  tss0.ist[6] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
+  printkf("tss base addr:%p\r\n",&tss0);
+  printkf("tss ist0 addr:%p\r\n",(void*)tss0.ist[0]);
   __asm__ volatile("ltr %[offset];"
                    :
                    : [offset] "rm"((uint16_t)0x28U)

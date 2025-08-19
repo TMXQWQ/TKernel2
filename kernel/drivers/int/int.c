@@ -134,7 +134,7 @@ void idt_init(void) {
   set_intr_gate(1, 0, default_irq_handler);  // 调试异常
   set_intr_gate(2, 0, default_irq_handler);  // NMI
   set_intr_gate(0xd, 0, gp_irq_handler);
-  set_intr_gate(0xe, 0, page_fault_handle);
+  set_intr_gate(0xe, 1, page_fault_handle);
 
   // 3. 设置硬件中断（32-255号向量）
   for (unsigned int i = 32; i < 256; i++) {

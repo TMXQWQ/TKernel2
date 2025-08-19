@@ -41,7 +41,10 @@
         "initializer_list": "c",
         "ranges": "c",
         "span": "c",
-        "utility": "c"
+        "utility": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c"
     },
     "clangd.arguments": [
         "--background-index",

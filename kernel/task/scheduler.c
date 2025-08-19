@@ -214,7 +214,7 @@ __attribute__((interrupt)) void timer_handle(interrupt_frame_t *frame) {
     restore_regs();
     return;
   }
-
+  printkf("frame addr:%p\r\n", frame);
   current_task->context0.rip = frame->rip;
   scheduler(frame, tmp);
   // printkf("%p\n", frame->rip);

@@ -42,7 +42,7 @@ void hpet_init(hpet_t *hpet) {
   plogk("hpet: HPET Timer Period = %u (us)\n", hpet_period);
 
   hpet_addr->general_configuration |= 1;
-  set_intr_gate(IRQ_0, 0, (void *)timer_handle);
+  set_intr_gate(IRQ_0, 1, (void *)timer_handle);
   plogk("hpet: HPET General Configuration Register set to 0x%08lx\n",
         hpet_addr->general_configuration);
 }
