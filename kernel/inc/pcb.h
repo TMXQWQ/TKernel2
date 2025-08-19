@@ -61,6 +61,10 @@ typedef struct task_pcb {
     void* sources;                  //持有资源列表(暂不实现)
     uint64_t          kernel_stack; // 内核栈
     uint64_t          user_stack;   // 用户栈
+    enum {
+        NO_FLAG=0,
+        INIT,
+    } flag;
 } pcb_t;
 
 pcb_t* init_task();

@@ -204,39 +204,27 @@ void remove_task_from_ready_queue(pcb_t *task) {
   }
 }
 
-__attribute__((interrupt)) void timer_handle(struct interrupt_frame *frame) {
-  // for (int i = 0; i < 5; i++)
-  //     printks("frame[%d] = 0x%lx\n", i, frame[i]);
-  // __asm__("mov %0,%%rsp\n\tiretq"::"r"(frame):);
+__attribute__((interrupt)) void timer_handle(interrupt_frame_t *frame) {
   static regs_t *tmp;
   __asm__("cli");
   save_regs();
   __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
   if (is_scheduler == 0) {
-    // plogk("timer intr cought and is_scheduler = 0\n");
     send_eoi();
     restore_regs();
     return;
   }
 
   current_task->context0.rip = frame->rip;
-  // plogk("timer intr cought\n");
   scheduler(frame, tmp);
-  // ret_from_intr();
+  // printkf("%p\n", frame->rip);
   send_eoi();
-  if (frame->cs == 0x8) {
-    __asm__ __volatile__(restore_regs_asm
-                         "mov %0, %%rsp\t\n"
-                         "retq" ::"m"(current_task->context0.rsp)
-                         :);
-  }
-
   restore_regs();
   return;
 }
 
 //简易轮转调度
-int scheduler(struct interrupt_frame *frame, regs_t *regs) {
+int scheduler(interrupt_frame_t *frame, regs_t *regs) {
   static uint32_t count = 0;
   count++;
   // printks("%d",count);
@@ -250,10 +238,10 @@ int scheduler(struct interrupt_frame *frame, regs_t *regs) {
   next = next->next;
   pcb_t *now = current_task;
   current_task = ((pcb_t *)(next->data));
-  // printks("scheduling from pid %d to pid %d\n", now->pid,
+  // printk("\nscheduling from pid %d to pid %d\n", now->pid,
   //         ((pcb_t *)(next->data))->pid);
-  // printks("pid %d context rip:%p\r\n",now->pid);
-  // printks("pid %d context rip:%p\r\n",((pcb_t*)(next->data))->pid);
+  // printk("pid %d context rip:%p\r\n",now->pid);
+  // printk("pid %d context rip:%p\r\n",((pcb_t*)(next->data))->pid);
   switch_to(now, current_task, frame, regs);
   // list_t* old=current_task_ls;
   // list_t* new=(current_task_ls->next);
@@ -262,7 +250,7 @@ int scheduler(struct interrupt_frame *frame, regs_t *regs) {
 }
 
 // __attribute__((force_align_arg_pointer))
-void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
+void switch_to(pcb_t *source, pcb_t *target, interrupt_frame_t *frame,
                regs_t *regs) {
   switch_page_directory(target->page_dir);
   TaskContext *old = &(source->context0), *new = &(target->context0);
@@ -284,13 +272,13 @@ void switch_to(pcb_t *source, pcb_t *target, struct interrupt_frame *frame,
 
   // 保存旧任务栈指针
   // __asm__ __volatile__("mov %%rsp, %0" : "=m"(old->rsp));
-  if (frame->cs == 0x8) {
-    old->rsp = frame - sizeof(struct interrupt_frame);
-    goto skip;
-  }
+  // if (frame->cs == 0x8) {
+  //   old->rsp = frame - sizeof(struct interrupt_frame);
+  //   goto skip;
+  // }
 
   old->rsp = frame->rsp;
-skip:
+  // skip:
   // uint64_t* rsp;
   // __asm__("mov %%rsp,%0"::"r"(rsp):);
   // printks("RSP before iretq: %p\n", rsp);
@@ -365,102 +353,4 @@ skip:
   regs->rbp = new->rbp;
   regs->rsi = new->rsi;
   regs->rdi = new->rdi;
-  // if (regs->_rsp != old->rsp)
-  // {
-  //   struct interrupt_frame* p = ((struct
-  //   interrupt_frame*)((regs->_rsp)-=sizeof(frame))); p->cs = frame->cs;
-  //   p->rflags = frame->rflags;
-  //   p->rip = frame->rflags;
-  //   p->rsp = frame->rsp;
-  //   p->ss = frame->ss;
-  // }
-
-  // uint64_t* rsp;
-  // __asm__("mov %%rsp,%0"::"r"(rsp):);
-  // printks("RSP before iretq: %p\n", rsp);
-  // printks("Stack dump: %p %p %p %p\n", *rsp, *(rsp+1), *(rsp+2), *(rsp+3));
-  // 执行中断返回
-  // restore_regs();
-  // 切换到新任务栈
-  // __asm__ __volatile__("mov %0, %%rsp" :: "r"(new->rsp));
-  // cheat_ret_from_intr();
 }
-/*
-void switch_to(TaskContext* old, TaskContext* new) {
-    __asm__ __volatile__ (
-        // ===== 保存旧任务上下文 =====
-        // 保存通用寄存器
-        "movq %%r15, 0x00(%[old])\n\t"
-        "movq %%r14, 0x08(%[old])\n\t"
-        "movq %%r13, 0x10(%[old])\n\t"
-        "movq %%r12, 0x18(%[old])\n\t"
-        "movq %%r11, 0x20(%[old])\n\t"
-        "movq %%r10, 0x28(%[old])\n\t"
-        "movq %%r9,  0x30(%[old])\n\t"
-        "movq %%r8,  0x38(%[old])\n\t"
-        "movq %%rbx, 0x40(%[old])\n\t"
-        "movq %%rbp, 0x48(%[old])\n\t"
-
-        // 保存返回地址 (RIP) - 关键修复点
-        "leaq .Lreturn_point(%%rip), %%rax\n\t"
-        "movq %%rax, 0x50(%[old])\n\t"   // 保存到 old->rip
-
-        // 保存栈指针 (RSP)
-        "movq %%rsp, 0x58(%[old])\n\t"
-
-        // 保存标志寄存器 (RFLAGS)
-        "pushfq\n\t"
-        "popq %%rax\n\t"
-        "movq %%rax, 0x60(%[old])\n\t"
-
-        // 保存其他寄存器
-        "movq %%rax, 0x68(%[old])\n\t"   // 临时保存 RAX
-        "movq %%rcx, 0x70(%[old])\n\t"
-        "movq %%rdx, 0x78(%[old])\n\t"
-        "movq %%rdi, 0x80(%[old])\n\t"   // 保存 RDI (old 参数)
-        "movq %%rsi, 0x88(%[old])\n\t"   // 保存 RSI (new 参数)
-
-        // ===== 恢复新任务上下文 =====
-        // 使用 RDX 作为临时基址寄存器
-        "movq %[new], %%rdx\n\t"
-
-        // 恢复通用寄存器（除 RSP/RIP 外）
-        "movq 0x00(%%rdx), %%r15\n\t"
-        "movq 0x08(%%rdx), %%r14\n\t"
-        "movq 0x10(%%rdx), %%r13\n\t"
-        "movq 0x18(%%rdx), %%r12\n\t"
-        "movq 0x20(%%rdx), %%r11\n\t"
-        "movq 0x28(%%rdx), %%r10\n\t"
-        "movq 0x30(%%rdx), %%r9\n\t"
-        "movq 0x38(%%rdx), %%r8\n\t"
-        "movq 0x40(%%rdx), %%rbx\n\t"
-        "movq 0x48(%%rdx), %%rbp\n\t"
-
-        // 恢复栈指针 (RSP)
-        "movq 0x58(%%rdx), %%rsp\n\t"
-
-        // 恢复标志寄存器 (RFLAGS)
-        "pushq 0x60(%%rdx)\n\t"
-        "popfq\n\t"
-
-        // 恢复 RIP - 关键修复点
-        "pushq 0x50(%%rdx)\n\t"          // 将新任务的 RIP 压入栈
-
-        // 恢复剩余寄存器
-        "movq 0x68(%%rdx), %%rax\n\t"
-        "movq 0x70(%%rdx), %%rcx\n\t"
-        "movq 0x78(%%rdx), %%rdx\n\t"    // 恢复 RDX（覆盖临时基址）
-
-        // 切换到新任务
-        "retq\n\t"                       // 跳转到新任务的 RIP
-
-        // 当切换回旧任务时的返回点
-        ".Lreturn_point:\n\t"
-
-        : // 无输出
-        : [old] "D" (old), [new] "S" (new)
-        : "memory", "rax", "rbx", "rcx", "rdx",
-          "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "cc"
-    );
-}
-*/

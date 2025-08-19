@@ -1,6 +1,7 @@
 #include "debug.h"
 #include "hal.h"
 #include "os_terminal.h"
+#include "spin.h"
 #include "vargs.h"
 
 int is_digit(int c) { return c >= '0' && c <= '9'; }
@@ -285,8 +286,40 @@ int printks(const char *format, ...) {
   // io_printf("\r\n");
   return 0;
 }
-
+spinlock_t printk_lock;
 int printk(const char *format, ...) {
+  static char buff[1024];
+  spin_lock(&printk_lock);
+  va_list args;
+  int i;
+
+  va_start(args, format);
+  i = vsprintf(buff, format, args);
+  va_end(args);
+  buff[i] = '\0';
+  // terminal_process(buff);
+  // terminal_process("\r\n");
+  io_printf(buff);
+  spin_unlock(&printk_lock);
+  return 0;
+}
+/* Kernel print log */
+void plogk(const char *format, ...) {
+  static char buff[1024];
+  va_list args;
+  int i;
+  printk("[\t%ld\t]", nano_time());
+  va_start(args, format);
+  spin_lock(&printk_lock);
+  i = vsprintf(buff, format, args);
+  va_end(args);
+  buff[i] = '\0';
+  io_printf(buff);
+  spin_unlock(&printk_lock);
+  return;
+}
+
+int printkf(const char *format, ...) { //强制格式化输出,不使用锁机制
   static char buff[1024];
   va_list args;
   int i;
@@ -299,20 +332,4 @@ int printk(const char *format, ...) {
   // terminal_process("\r\n");
   io_printf(buff);
   return 0;
-}
-
-#define KERNEL_LOG
-/* Kernel print log */
-void plogk(const char *format, ...) {
-  static char buff[1024];
-  va_list args;
-  int i;
-  printk("[\t%ld\t]", nano_time());
-  va_start(args, format);
-  i = vsprintf(buff, format, args);
-  va_end(args);
-  buff[i] = '\0';
-  // terminal_process(buff);
-  // terminal_process("\r\n");
-  io_printf(buff);
 }

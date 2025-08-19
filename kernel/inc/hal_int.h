@@ -1,13 +1,7 @@
 #ifndef HAL_INT_H
 #define HAL_INT_H
 #define GDT_IDT_MAX 256
-struct interrupt_frame {
-    uint64_t rip;
-    uint64_t cs;
-    uint64_t rflags;
-    uint64_t rsp;
-    uint64_t ss;
-} __attribute__((packed));
+#include "idt.h"
 
 struct idt_gate {
     uint16_t offset_low;     // 偏移低16位

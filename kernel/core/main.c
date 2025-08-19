@@ -79,7 +79,8 @@ int kernel_main() {
     asm volatile("hlt");
     // __asm__("int $0x40");
     // for(int i=0;i<=114514;i++) __asm__ ("nop");
-    // printks("scheduling...");
+    printks("schedule to idle\r\n");
+    // msleep(10);
     // scheduler();
   }
   printks("\n[ERROR]kernel is going to end!!!\n");

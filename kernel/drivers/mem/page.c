@@ -18,13 +18,15 @@
 // #include "stdlib.h"
 #include "string.h"
 // #include <stdlib.h>
+#include "idt.h"
+#include "scheduler.h"
 
 page_directory_t kernel_page_dir;
 page_directory_t *current_directory = 0;
 
 /* Page fault handling */
-__attribute__((interrupt)) void
-page_fault_handle(struct interrupt_frame_t *frame, uint64_t error_code) {
+__attribute__((interrupt)) void page_fault_handle(interrupt_frame_t *frame,
+                                                  uint64_t error_code) {
   (void)frame;
   disable_intr();
 
@@ -36,10 +38,19 @@ page_fault_handle(struct interrupt_frame_t *frame, uint64_t error_code) {
   uint64_t us = error_code & 0x4;       // User mode writes to kernel page
   uint64_t reserved = error_code & 0x8; // Write CPU reserved bits
   uint64_t id = error_code & 0x10;      // Caused by instruction fetch
-
-  if (present)
-    panic("PAGE_FAULT-Present-Address: 0x%016llx", faulting_address);
-  else if (rw)
+  printkf("current_task->rip: %p\n", current_task->context0.rip);
+  printkf("pid0->rip: %p\r\n", idle_pcb->context0.rip);
+  printkf("pid1->rip: %p\r\n", init_pcb->context0.rip);
+  printkf("frame->rip: %p\r\n", frame->rip);
+  printkf("frame->rsp: %p\r\n", frame->rsp);
+  printkf("frame->ss: %p\r\n", frame->ss);
+  printkf("frame: %p\r\n", frame);
+  if (present) {
+    printkf("PAGE_FAULT-Present-Address: 0x%016lx", faulting_address);
+    frame->rip = current_task->context0.rip;
+    frame->ss = 0x10;
+    return;
+  } else if (rw)
     panic("PAGE_FAULT-ReadOnly-Address: 0x%016llx", faulting_address);
   else if (us)
     panic("PAGE_FAULT-UserMode-Address: 0x%016llx", faulting_address);

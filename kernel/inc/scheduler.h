@@ -12,13 +12,13 @@ void disable_scheduler();
 
 int get_scheduler();
 
-int scheduler(struct interrupt_frame *frame, regs_t* regs);
+int scheduler(interrupt_frame_t *frame, regs_t* regs);
 
 __attribute__((interrupt))
-void timer_handle(struct interrupt_frame *frame);
+void timer_handle(interrupt_frame_t *frame);
 
 // 切换上下文：保存 old，恢复 new
-void switch_to(pcb_t* source, pcb_t* target,struct interrupt_frame *frame, regs_t* regs);
+void switch_to(pcb_t* source, pcb_t* target,interrupt_frame_t *frame, regs_t* regs);
 
 
 // 伪造中断现场 - 修正顺序

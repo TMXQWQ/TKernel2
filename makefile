@@ -13,7 +13,7 @@ S_SOURCES	:= $(shell find * -name "*.s")
 LD_FLAGS	:= -static -m elf_x86_64 -T ./kernel/linker.lds --allow-multiple-definition
 XORRISOFLAGS = -as mkisofs --efi-boot limine/limine-uefi-cd.bin
 QEMU_FLAGS := -bios ./assets/OVMF.fd -cdrom tkernel.iso --machine q35 -m 1G 
-# QEMU_KVM := -enable-kvm -cpu host
+QEMU_KVM := -enable-kvm -cpu host
 # QEMU_reOUT := > ./qemu.log
 QEMU_OUT := -serial stdio $(QEMU_reOUT)
 CHECKS         := -quiet -checks=-*,clang-analyzer-*,bugprone-*,cert-*,misc-*,performance-*,portability-*,-misc-include-cleaner,-clang-analyzer-security.insecureAPI.*
@@ -64,13 +64,13 @@ tkernel.iso: kernel.bin kerneldump.log initrd.img
 	
 
 run: tkernel.iso
-	qemu-system-x86_64 -enable-kvm -cpu host $(QEMU_FLAGS) $(QEMU_OUT)
+	qemu-system-x86_64 $(QEMU_KVM) $(QEMU_FLAGS) $(QEMU_OUT)
 
 run_db: tkernel.iso
-	qemu-system-x86_64 $(QEMU_KVM) $(QEMU_FLAGS) -no-reboot -d in_asm,int -D qemu.log
+	qemu-system-x86_64 $(QEMU_FLAGS) -no-reboot -d in_asm,int -D qemu.log
 
 run_gdb: tkernel.iso
-	qemu-system-x86_64 $(QEMU_KVM) $(QEMU_FLAGS) -no-reboot -serial stdio -S -s -d in_asm,int -D qemu.log
+	qemu-system-x86_64 $(QEMU_FLAGS) -no-reboot -serial stdio -S -s -d in_asm,int -D qemu.log
 
 format: $(C_SOURCES:%=%.fmt) $(S_SOURCES:%=%.fmt) $(HEADERS:%=%.fmt)
 	$(Q)printf "\033[1;32m[Done]\033[0m Code Format complete.\n\n"

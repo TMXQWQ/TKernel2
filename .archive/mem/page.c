@@ -34,7 +34,6 @@ __attribute__((interrupt)) static void page_fault_handle(struct interrupt_frame_
 	int us = error_code & 0x4;			// 用户态写入内核页
 	int reserved = error_code & 0x8;	// 写入CPU保留位
 	int id = error_code & 0x10;			// 由取指引起
-
 	if (present) {
 		panic("PAGE_FAULT-Present-Address: 0x%016x", faulting_address);
 		// page_map_to(current_directory,faulting_address,alloc_frames(1),KERNEL_PTE_FLAGS);

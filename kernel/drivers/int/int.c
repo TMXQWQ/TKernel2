@@ -1,14 +1,14 @@
+#include "apic.h"
 #include "debug.h"
 #include "hal.h"
 #include "hal_int.h"
 #include "page.h"
 #include "scheduler.h"
 #include <stdint.h>
-// #include "hal_mem.old.h"
-#include "page.h"
+#include "idt.h"
 
 __attribute__((interrupt)) void
-page_fault_handle(struct interrupt_frame_t *frame, uint64_t error_code);
+page_fault_handle(interrupt_frame_t *frame, uint64_t error_code);
 
 void set_intr_gate(unsigned int vector, uint8_t ist, void *handler) {
   _set_gate(&IDT_Table[vector], 0x8E, ist, handler); // 0x8E=中断门，DPL=0
@@ -64,7 +64,9 @@ void set_tss64(unsigned long rsp0, unsigned long rsp1, unsigned long rsp2,
 __attribute__((interrupt)) void
 default_irq_handler(struct interrupt_frame *frame) {
   // uint8_t vector = read_isr(); // 从APIC读取中断向量
-  panic("Unhandled IRQ");
+  // panic("Unhandled IRQ");
+  send_eoi();
+  return;
 }
 
 __attribute__((interrupt)) void
@@ -118,7 +120,7 @@ void idt_init(void) {
   //     (unsigned long)0xFFFF800000007C00,   // rsp0 (内核栈)
   //     (unsigned long)0,                    // rsp1
   //     (unsigned long)0,                    // rsp2
-  //     (unsigned long)0,                    // ist1
+  //     (unsigned long)0xFFFF800000007C00,   // ist1
   //     (unsigned long)0,                    // ist2
   //     (unsigned long)0,                    // ist3
   //     (unsigned long)0,                    // ist4
@@ -143,7 +145,6 @@ void idt_init(void) {
   set_intr_gate(1, 0, default_irq_handler);  // 调试异常
   set_intr_gate(2, 1, default_irq_handler);  // NMI使用IST1
   set_intr_gate(8, 1, double_fault_handler); // 双重错误使用IST1
-  set_intr_gate(0x40, 0, timer_handle); //(暂未完全功能)定时器中断
 
   // 5. 加载IDT
   struct {

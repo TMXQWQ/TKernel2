@@ -8,6 +8,7 @@
 #include "kshell.h"
 #include "page.h"
 #include "scheduler.h"
+#include "timer.h"
 
 uint32_t now_pid = 0;
 pcb_t *idle_pcb;
@@ -148,9 +149,10 @@ int init_user_main() {
   }
 }
 
-int init_kmain(int* test) {
-  printks("[INFO]Init process is running. test=%p\n", test);
+int init_kmain(int *test) {
+  printk("[INFO]Init process is running. test=%p\n", test);
   enable_scheduler();
+  int a = 0;
   // 创建内核线程kshell
   // create_kernel_thread(kshell, NULL, "Kernel shell");
   // 加载init进程到内存中
@@ -160,11 +162,12 @@ int init_kmain(int* test) {
   // TODO
   // 跳转到init进程
   // switch_to_user_mode(init_user_main);
+  enable_intr();
   while (1) {
-    enable_intr();
     // __asm__("int $0x40");
-    // plogk("schedule to init\n");
-    __asm__("hlt");
+    plogk("schedule to init,a=%d\r\n", a);
+    msleep(10);
+    // __asm__("hlt");
   }
   return 0; // nerver get
 }
