@@ -204,24 +204,52 @@ void remove_task_from_ready_queue(pcb_t *task) {
   }
 }
 
-__attribute__((interrupt)) void timer_handle(interrupt_frame_t *frame) {
-  static regs_t *tmp;
-  __asm__("cli");
-  save_regs();
-  __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
+// __attribute__((interrupt)) void timer_handle(interrupt_frame_t *frame) {
+//   static regs_t *tmp;
+//   __asm__("cli");
+//   save_regs();
+//   __asm__ __volatile__("mov %%rsp,%0" : "=r"(tmp)::);
+//   if (is_scheduler == 0) {
+//     send_eoi();
+//     restore_regs();
+//     return;
+//   }
+//   // printkf("frame addr:%p\r\n", frame);
+//   current_task->context0.rip = frame->rip;
+//   scheduler(frame, tmp);
+//   // printkf("%p\n", frame->rip);
+//   send_eoi();
+//   restore_regs();
+//   return;
+// }
+
+void timer_handle_c(regs_t *reg) {
+  interrupt_frame_t *frame = &((_regs_t*)reg)->auto_regs.frame;
+  // printkf("frame:%p\r\n", frame);
+  // printkf("frame->rip:%p\r\n", frame->rip);
+  // printkf("frame->rsp:%p\r\n", frame->rsp);
+  // printkf("frame->ss:%p\r\n", frame->ss);
+  // printkf("reg:%p\r\n", reg);
   if (is_scheduler == 0) {
     send_eoi();
-    restore_regs();
     return;
   }
-  printkf("frame addr:%p\r\n", frame);
   current_task->context0.rip = frame->rip;
-  scheduler(frame, tmp);
-  // printkf("%p\n", frame->rip);
+  scheduler(frame, reg);
   send_eoi();
-  restore_regs();
   return;
 }
+
+__asm__(
+  ".globl timer_handle\n\t"
+  "timer_handle:\n\t"
+  _save_regs_asm_
+  "mov %rsp, %rdi\n\t"
+  "call timer_handle_c\n\t"
+  _restore_regs_asm_
+  "sti\n\t"
+  "iretq\n\t"
+);
 
 //简易轮转调度
 int scheduler(interrupt_frame_t *frame, regs_t *regs) {

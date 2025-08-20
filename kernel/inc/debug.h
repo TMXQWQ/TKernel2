@@ -18,3 +18,4 @@ char *number(char *str, int64_t num, int base, int size, int precision,
 
 int skip_atoi(const char **s);
 
+int printkf(const char *format, ...) ; //强制格式化输出,不使用锁机制

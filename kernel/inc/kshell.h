@@ -15,3 +15,4 @@ int mkdir(char* cmd);
 int touch(char* cmd);
 int ls(char* cmd);
 int cd(char* cmd);
+int ps(char *cmd);

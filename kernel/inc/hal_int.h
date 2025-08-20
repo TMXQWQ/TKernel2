@@ -3,6 +3,14 @@
 #define GDT_IDT_MAX 256
 #include "idt.h"
 
+struct interrupt_frame {
+    uint64_t rip;
+    uint64_t cs;
+    uint64_t rflags;
+    uint64_t rsp;
+    uint64_t ss;
+} __attribute__((packed));
+
 struct idt_gate {
     uint16_t offset_low;     // 偏移低16位
     uint16_t selector;       // 代码段选择子

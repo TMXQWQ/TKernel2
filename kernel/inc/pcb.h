@@ -3,6 +3,8 @@
 #include "page.h"
 #include "klibc.h"
 #include "page.h"
+#include "hal_int.h"
+#include "idt.h"
 
 typedef struct task_regs{
     uint64_t ds,es,fs,gs;
@@ -17,6 +19,25 @@ typedef struct task_regs{
     uint64_t rsp;
     uint64_t ss;
 }regs_t;
+
+typedef struct _task_regs{
+    uint64_t ds,es,fs,gs;
+    uint64_t rax,rbx,rcx,rdx,rbp,rsi,rdi;
+    uint64_t r8,r9,r10,r11,r12,r13,r14,r15;
+    uint64_t vector;   // 保留
+    uint64_t err_code; // 保留
+    // CPU自动压入
+    union{
+        struct {
+            uint64_t rip;
+            uint64_t cs;
+            uint64_t rflags;
+            uint64_t rsp;
+            uint64_t ss;
+        } frame_regs;
+        interrupt_frame_t frame;
+    } auto_regs;
+}_regs_t;
 
 typedef struct {
     uint64_t r15;

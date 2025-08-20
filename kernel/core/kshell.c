@@ -8,6 +8,7 @@
 #include "hal.h"
 #include "klibc.h"
 #include "vfs.h"
+#include "pcb.h"
 
 vfs_inode_t *curdir;
 
@@ -16,6 +17,7 @@ buildin_cmd_t buildin_cmd[256] = {
     (buildin_cmd_t){.name = "touch", .len = 6, .func = touch},
     (buildin_cmd_t){.name = "ls", .len = 3, .func = ls},
     (buildin_cmd_t){.name = "cd", .len = 3, .func = cd},
+    (buildin_cmd_t){.name = "ps", .len = 3, .func = ps},
 };
 
 int mkdir(char *cmd) {
@@ -110,6 +112,13 @@ int cd(char *cmd) {
   }
   curdir = vfs_search(tmp);
 
+  return 0;
+}
+
+int ps(char *cmd) {
+  // for(;;){
+  //   printk("pid: %d\tname:%s\r\n", );
+  // }
   return 0;
 }
 

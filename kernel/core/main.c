@@ -73,13 +73,13 @@ int kernel_main() {
   current_task = idle_pcb;
   enable_scheduler();
   __asm__("sti");
-  __asm__("int $0x40");
+  __asm__("int $0x20");
   // switch_to(&(init_pcb->context0),&(idle_pcb->context0));
   while (1) {
     asm volatile("hlt");
     // __asm__("int $0x40");
     // for(int i=0;i<=114514;i++) __asm__ ("nop");
-    printks("schedule to idle\r\n");
+    // printks("schedule to idle\r\n");
     // msleep(10);
     // scheduler();
   }

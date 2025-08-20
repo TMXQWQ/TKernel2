@@ -154,7 +154,7 @@ int init_kmain(int *test) {
   enable_scheduler();
   int a = 0;
   // 创建内核线程kshell
-  // create_kernel_thread(kshell, NULL, "Kernel shell");
+  create_kernel_thread(kshell, NULL, "Kernel shell");
   // 加载init进程到内存中
   // page_map_to(get_current_directory, 0x405840, virt_to_phys(&init_user_main),
   //             PTE_USER || PTE_PRESENT || PTE_WRITEABLE);
@@ -165,7 +165,7 @@ int init_kmain(int *test) {
   enable_intr();
   while (1) {
     // __asm__("int $0x40");
-    plogk("schedule to init,a=%d\r\n", a);
+    // plogk("schedule to init,a=%d\r\n", a);
     msleep(10);
     // __asm__("hlt");
   }
