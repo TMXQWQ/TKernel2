@@ -6,6 +6,8 @@
 #include "hal_int.h"
 #include "idt.h"
 
+#define PCB_FLAGS_KTHREAD (1UL << 0)
+
 typedef struct task_regs{
     uint64_t ds,es,fs,gs;
     uint64_t rax,rbx,rcx,rdx,rbp,rsi,rdi;
@@ -67,13 +69,14 @@ typedef struct task_pcb {
                             //1:服务器/驱动
                             //2:用户
                             //3:仅用于idle
-    uint8_t nice;           //优先级(数字越小优先级越高)，每次用尽时间片就+1直到0
+    uint8_t nice;           //优先级(数字越大优先级越高)，每次用尽时间片就+1直到0
     uint32_t time;          //时间片（虚拟运行时间）
     uint8_t state;          //0:可调度(就绪态)
                             //1:阻塞
                             //2:调试暂停
                             //3:运行中
-    uint8_t init_nice;      //初始优先级(数字越小优先级越高)
+                            //4:僵死(可销毁)
+    uint8_t init_nice;      //初始优先级(数字越大优先级越高)
     TaskContext       context0;     // 上下文
     struct page_directory* page_dir;     // 进程页表
     uint64_t cr3;     // 进程页表(az)
@@ -82,10 +85,7 @@ typedef struct task_pcb {
     void* sources;                  //持有资源列表(暂不实现)
     uint64_t          kernel_stack; // 内核栈
     uint64_t          user_stack;   // 用户栈
-    enum {
-        NO_FLAG=0,
-        INIT,
-    } flag;
+    uint64_t flag;
 } pcb_t;
 
 pcb_t* init_task();
@@ -99,3 +99,5 @@ extern pcb_t* current_task;
 extern pcb_t* init_pcb;
 
 extern list_t* current_task_ls;
+
+extern list_t *pcb_list;

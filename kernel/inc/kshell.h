@@ -1,6 +1,6 @@
 #pragma once
 
-#define NUM_OF_BUILDIN_CMDS (4)
+#define NUM_OF_BUILDIN_CMDS (5)
 
 int kshell();
 

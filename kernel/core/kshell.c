@@ -116,9 +116,10 @@ int cd(char *cmd) {
 }
 
 int ps(char *cmd) {
-  // for(;;){
-  //   printk("pid: %d\tname:%s\r\n", );
-  // }
+  printk("pid: %d\tname:%s\r\n", ((pcb_t*)pcb_list->data)->pid, ((pcb_t*)pcb_list->data)->name);
+  for(list_t *p=pcb_list->next;p!=pcb_list;p=p->next){
+    printk("pid: %d\tname:%s\r\n", ((pcb_t*)p->data)->pid, ((pcb_t*)p->data)->name);
+  }
   return 0;
 }
 
@@ -127,7 +128,7 @@ int kshell() {
   curdir = &root;
   for (;;) {
     int count = 0;
-    char cmd[256] = {'0'};
+    char cmd[256] = {'\0'};
     printk("%s > ", curdir->name);
     for (count = 0; count < 255;) {
       char input = gets_serial();

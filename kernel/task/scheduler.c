@@ -10,7 +10,7 @@
 int is_scheduler = 0; // 0:disable
                       // 1:enable
 
-static list_t *pcb_list = NULL;
+list_t *pcb_list = NULL;
 
 void enable_scheduler() { is_scheduler = 1; }
 
@@ -343,20 +343,15 @@ void switch_to(pcb_t *source, pcb_t *target, interrupt_frame_t *frame,
       // CPU 自动保存部分
       .rip = new->rip, // 指令指针
       .cs = 0x8,       // 内核代码段选择子
-      .rflags = 0x200, // 启用中断 (IF=1)
+      .rflags = new->rflags,
       .rsp = new->rsp, // 栈指针
       .ss = 0x10       // 内核数据段选择子
   };
-  // __asm__ __volatile__(
-  //     "pushq %%rsp\n\t"
-  //     "pushfq\n\t"
-  //     "pushq %1\n\t"
-  //     "pushq %0\n\t"
-  //     "iretq"
-  //     ::"r"(new->rip),"r"(new_regs.cs):"rax"
-  // );
-  // 伪造中断返回帧
-  // cheat_from_intr(new_regs.rip,new_regs.cs,new->rsp);
+  if (target->flag & PCB_FLAGS_KTHREAD == 0)
+  {
+    new_regs.cs = 0x20;
+    new_regs.ss = 0x18;
+  }
   frame->rip = new_regs.rip;
   frame->cs = new_regs.cs;
   frame->rflags = new_regs.rflags;

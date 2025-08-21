@@ -70,26 +70,11 @@ pcb_t *clone(char *name, pcb_t *father, uint8_t flags) {
   return new_p;
 }
 
-void switch_to_user_mode(uint64_t func) {
+void switch_to_user_mode(void* func) {
   __asm__("cli");
-  uint64_t rsp = (uint64_t)(get_current_task()->user_stack + 32768);
   get_current_task()->context0.rflags = (0 << 12 | 0b10 | 1 << 9);
-  __asm__ volatile("pushq %5\n" // SS
-                   "pushq %1\n" // RSP
-                   "pushq %2\n" // RFLAGS
-                   "pushq %3\n" // CS
-                   "pushq %4\n" // RIP
-
-                   "mov %0, %%gs\n"
-                   "mov %0, %%fs\n"
-                   "mov %0, %%es\n"
-                   "mov %0, %%ds\n"
-                   "iretq\n"
-                   :
-                   : "r"((uint64_t)((4 * 8 & 0xFFFC & 0xFFFB) | (3))), "r"(rsp),
-                     "r"(get_current_task()->context0.rflags),
-                     "r"((uint64_t)0x23), "r"(func), "r"((uint64_t)0x1b)
-                   : "memory");
+  current_task->flag ^= PCB_FLAGS_KTHREAD;
+  current_task->context0.rip = (uint64_t)func;
 }
 
 pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
@@ -113,7 +98,7 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   // new_task->cpu_id     = get_current_cpuid();
   // memcpy(new_task->name, name, strlen(name) + 1);
   // printks("-----Before call strcpy-----");
-  printks("[Kernel_thread]name:\t%s\r\n", name);
+  // printks("[Kernel_thread]name:\t%s\r\n", name);
 
   strcpy(new_task->name, name);
   uint64_t *stack_top = (uint64_t *)((uint64_t)new_task + STACK_SIZE);
@@ -132,8 +117,9 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   new_task->pid = now_pid++;
   new_task->page_dir = get_kernel_pagedir();
   new_task->cr3 = read_cr3();
+  new_task->flag = 0 | PCB_FLAGS_KTHREAD;
   add_task(new_task);
-  printks("create kernel thread:%d\n", new_task->pid);
+  // printks("create kernel thread:%d\n", new_task->pid);
   if (s == 1) {
     enable_scheduler();
   }
@@ -145,20 +131,22 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
 int idle_thread() {} //其实压根不会用到
 
 int init_user_main() {
+  printkf("Hello World!\r\n");
   for (;;) {
   }
 }
 
 int init_kmain(int *test) {
-  printk("[INFO]Init process is running. test=%p\n", test);
+  printk("[INFO]Init process is running. test=%d\n", *test);
   enable_scheduler();
   int a = 0;
   // 创建内核线程kshell
   create_kernel_thread(kshell, NULL, "Kernel shell");
+  create_kernel_thread(init_user_main, NULL, "test");
   // 加载init进程到内存中
   // page_map_to(get_current_directory, 0x405840, virt_to_phys(&init_user_main),
   //             PTE_USER || PTE_PRESENT || PTE_WRITEABLE);
-  // switch_to_user_mode(0x405840);
+  // switch_to_user_mode(init_user_main);
   // TODO
   // 跳转到init进程
   // switch_to_user_mode(init_user_main);
@@ -175,7 +163,9 @@ int init_kmain(int *test) {
 pcb_t *init_task() {
   idle_pcb = create_kernel_thread(idle_thread, NULL, "System(idle)");
   idle_pcb->level = 3;
-  init_pcb = create_kernel_thread(init_kmain, &(idle_pcb->pid), "init");
+  int *p = (int*)malloc(sizeof(int));
+  *p=114514;
+  init_pcb = create_kernel_thread(init_kmain, p, "init");
   current_task = idle_pcb;
   printks("idle stack: %p\tinit stack:%p\n\t", idle_pcb->context0.rsp,
           init_pcb->context0.rsp);
