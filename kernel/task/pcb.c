@@ -74,7 +74,10 @@ void switch_to_user_mode(void* func) {
   __asm__("cli");
   get_current_task()->context0.rflags = (0 << 12 | 0b10 | 1 << 9);
   current_task->flag ^= PCB_FLAGS_KTHREAD;
+  current_task->flag |= PCB_FLAGS_SWITCH_TO_USER;
   current_task->context0.rip = (uint64_t)func;
+  __asm__("sti");
+  for(;;) ;
 }
 
 pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
@@ -141,12 +144,11 @@ int init_kmain(int *test) {
   enable_scheduler();
   int a = 0;
   // 创建内核线程kshell
-  create_kernel_thread(kshell, NULL, "Kernel shell");
-  create_kernel_thread(init_user_main, NULL, "test");
+  // create_kernel_thread(kshell, NULL, "Kernel shell");
   // 加载init进程到内存中
   // page_map_to(get_current_directory, 0x405840, virt_to_phys(&init_user_main),
   //             PTE_USER || PTE_PRESENT || PTE_WRITEABLE);
-  // switch_to_user_mode(init_user_main);
+  switch_to_user_mode(init_user_main);
   // TODO
   // 跳转到init进程
   // switch_to_user_mode(init_user_main);

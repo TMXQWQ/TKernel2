@@ -38,7 +38,7 @@ int kernel_main() {
     plogk("\tmemmap_request:%p\n", memmap_request.response);
     plogk("\thhdm_request:%p\n", hhdm_request.response);
     plogk("\tkernel_address_request:%p\n", kernel_address_request.response);
-    plogk("\tentry_point_request:%p\n", entry_point_request.response);
+    plogk("\tentry_point_request:%p\n", entry_point_request->response);
   }
   // sse_init();
   gdt_setup();

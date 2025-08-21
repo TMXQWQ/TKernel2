@@ -231,11 +231,21 @@ void timer_handle_c(regs_t *reg) {
   // printkf("frame->ss:%p\r\n", frame->ss);
   // printkf("reg:%p\r\n", reg);
   if (is_scheduler == 0) {
-    send_eoi();
-    return;
+    goto end;
   }
-  current_task->context0.rip = frame->rip;
+  if (current_task->flag & PCB_FLAGS_SWITCH_TO_USER != 0)
+  {
+    frame->rip = current_task->context0.rip;
+    current_task->flag ^= PCB_FLAGS_SWITCH_TO_USER;
+    current_task->flag ^= PCB_FLAGS_KTHREAD;
+    frame->cs = 0x20;
+    frame->ss = 0x18;
+    goto end;
+  } else {
+    current_task->context0.rip = frame->rip;
+  }
   scheduler(frame, reg);
+end:
   send_eoi();
   return;
 }
@@ -271,9 +281,6 @@ int scheduler(interrupt_frame_t *frame, regs_t *regs) {
   // printk("pid %d context rip:%p\r\n",now->pid);
   // printk("pid %d context rip:%p\r\n",((pcb_t*)(next->data))->pid);
   switch_to(now, current_task, frame, regs);
-  // list_t* old=current_task_ls;
-  // list_t* new=(current_task_ls->next);
-  // switch_to(&(((pcb_t*)(old->data))->context0),&(((pcb_t*)(new->data))->context0));
   return 0;
 }
 
@@ -297,20 +304,7 @@ void switch_to(pcb_t *source, pcb_t *target, interrupt_frame_t *frame,
   old->rbp = regs->rbp;
   old->rsi = regs->rsi;
   old->rdi = regs->rdi;
-
-  // 保存旧任务栈指针
-  // __asm__ __volatile__("mov %%rsp, %0" : "=m"(old->rsp));
-  // if (frame->cs == 0x8) {
-  //   old->rsp = frame - sizeof(struct interrupt_frame);
-  //   goto skip;
-  // }
-
   old->rsp = frame->rsp;
-  // skip:
-  // uint64_t* rsp;
-  // __asm__("mov %%rsp,%0"::"r"(rsp):);
-  // printks("RSP before iretq: %p\n", rsp);
-  // printks("Stack dump: %p %p %p %p\n", *rsp, *(rsp+1), *(rsp+2), *(rsp+3));
   // 创建新任务寄存器上下文
   regs_t new_regs = (regs_t){
       // 段寄存器

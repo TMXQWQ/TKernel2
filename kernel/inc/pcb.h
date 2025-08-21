@@ -7,6 +7,7 @@
 #include "idt.h"
 
 #define PCB_FLAGS_KTHREAD (1UL << 0)
+#define PCB_FLAGS_SWITCH_TO_USER (1UL << 1)
 
 typedef struct task_regs{
     uint64_t ds,es,fs,gs;

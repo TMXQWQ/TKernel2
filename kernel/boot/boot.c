@@ -72,11 +72,11 @@ __attribute__((
 __attribute__((
     used,
     section(".limine_requests"))) volatile struct limine_entry_point_request
-    entry_point_request = {
+    entry_point_request[1] = {{
         .id = LIMINE_ENTRY_POINT_REQUEST,
         .revision = 3,
         .entry = &kernel_main,
-};
+}};
 
 static volatile struct limine_internal_module initrd_module = {
     .flags = LIMINE_INTERNAL_MODULE_REQUIRED,
