@@ -3,6 +3,7 @@
 #include "os_terminal.h"
 #include "spin.h"
 #include "vargs.h"
+#include "acpi.h"
 
 int is_digit(int c) { return c >= '0' && c <= '9'; }
 

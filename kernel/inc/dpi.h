@@ -23,14 +23,14 @@
         int64_t *name##_get_index(uint64_t size);
 
 #define _BUILD_DRIVER_HANDLE(name) { \
-        .open = *name##_open,  \
-        .close = *name##_close,  \
-        .read = *name##_read,  \
-        .write = *name##_write,  \
-        .map = *name##_map,  \
-        .ioctl = *name##_ioctl,  \
-        .get_minor = *name##_get_minor,  \
-        .get_index = *name##_get_index      \
+        .open = name##_open,  \
+        .close = name##_close,  \
+        .read = name##_read,  \
+        .write = name##_write,  \
+        .map = name##_map,  \
+        .ioctl = name##_ioctl,  \
+        .get_minor = name##_get_minor,  \
+        .get_index = name##_get_index      \
 }
 
 typedef struct Driver driver;
