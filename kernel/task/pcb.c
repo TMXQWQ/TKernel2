@@ -70,14 +70,15 @@ pcb_t *clone(char *name, pcb_t *father, uint8_t flags) {
   return new_p;
 }
 
-void switch_to_user_mode(void* func) {
+void switch_to_user_mode(void *func) {
   __asm__("cli");
   get_current_task()->context0.rflags = (0 << 12 | 0b10 | 1 << 9);
   current_task->flag ^= PCB_FLAGS_KTHREAD;
   current_task->flag |= PCB_FLAGS_SWITCH_TO_USER;
   current_task->context0.rip = (uint64_t)func;
   __asm__("sti");
-  for(;;) ;
+  for (;;)
+    ;
 }
 
 pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
@@ -165,8 +166,8 @@ int init_kmain(int *test) {
 pcb_t *init_task() {
   idle_pcb = create_kernel_thread(idle_thread, NULL, "System(idle)");
   idle_pcb->level = 3;
-  int *p = (int*)malloc(sizeof(int));
-  *p=114514;
+  int *p = (int *)malloc(sizeof(int));
+  *p = 114514;
   init_pcb = create_kernel_thread(init_kmain, p, "init");
   current_task = idle_pcb;
   printks("idle stack: %p\tinit stack:%p\n\t", idle_pcb->context0.rsp,

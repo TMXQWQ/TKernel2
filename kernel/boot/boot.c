@@ -76,7 +76,7 @@ __attribute__((
         .id = LIMINE_ENTRY_POINT_REQUEST,
         .revision = 3,
         .entry = &kernel_main,
-}};
+    }};
 
 static volatile struct limine_internal_module initrd_module = {
     .flags = LIMINE_INTERNAL_MODULE_REQUIRED,

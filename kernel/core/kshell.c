@@ -7,8 +7,8 @@
 #include "debug.h"
 #include "hal.h"
 #include "klibc.h"
-#include "vfs.h"
 #include "pcb.h"
+#include "vfs.h"
 
 vfs_inode_t *curdir;
 
@@ -116,9 +116,11 @@ int cd(char *cmd) {
 }
 
 int ps(char *cmd) {
-  printk("pid: %d\tname:%s\r\n", ((pcb_t*)pcb_list->data)->pid, ((pcb_t*)pcb_list->data)->name);
-  for(list_t *p=pcb_list->next;p!=pcb_list;p=p->next){
-    printk("pid: %d\tname:%s\r\n", ((pcb_t*)p->data)->pid, ((pcb_t*)p->data)->name);
+  printk("pid: %d\tname:%s\r\n", ((pcb_t *)pcb_list->data)->pid,
+         ((pcb_t *)pcb_list->data)->name);
+  for (list_t *p = pcb_list->next; p != pcb_list; p = p->next) {
+    printk("pid: %d\tname:%s\r\n", ((pcb_t *)p->data)->pid,
+           ((pcb_t *)p->data)->name);
   }
   return 0;
 }

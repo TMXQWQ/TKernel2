@@ -20,7 +20,7 @@ typedef struct __attribute__((packed)) {
     // 文件内容紧随其后
 } cpio_header_t;
 
-typedef struct  {
+typedef struct CPIO_T {
     uint64_t ino;         // inode号 
     uint64_t mode;        // 文件权限 
     uint64_t uid;         // 用户ID 

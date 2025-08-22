@@ -14,11 +14,10 @@ static inline uint64_t parse_decimal(const char *str, size_t max_len) {
 cpio_t *analyzing_cpio(cpio_header_t *cpio) {
   if (cpio->magic[0] != '0' || cpio->magic[1] != '7' || cpio->magic[2] != '0' ||
       cpio->magic[3] != '7' || cpio->magic[4] != '0' || cpio->magic[5] != '1') {
-    goto yes;
+    cpio_t *ret = (cpio_t *)malloc(sizeof(cpio_t));
+    return ret;
   }
   return NULL;
-yes:
-  cpio_t *ret = (cpio_t *)malloc(sizeof(cpio_t));
 }
 
 /* 寻找下一个cpio header */

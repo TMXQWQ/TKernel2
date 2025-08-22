@@ -224,7 +224,7 @@ void remove_task_from_ready_queue(pcb_t *task) {
 // }
 
 void timer_handle_c(regs_t *reg) {
-  interrupt_frame_t *frame = &((_regs_t*)reg)->auto_regs.frame;
+  interrupt_frame_t *frame = &((_regs_t *)reg)->auto_regs.frame;
   // printkf("frame:%p\r\n", frame);
   // printkf("frame->rip:%p\r\n", frame->rip);
   // printkf("frame->rsp:%p\r\n", frame->rsp);
@@ -233,8 +233,7 @@ void timer_handle_c(regs_t *reg) {
   if (is_scheduler == 0) {
     goto end;
   }
-  if (current_task->flag & PCB_FLAGS_SWITCH_TO_USER != 0)
-  {
+  if (current_task->flag & PCB_FLAGS_SWITCH_TO_USER != 0) {
     frame->rip = current_task->context0.rip;
     current_task->flag ^= PCB_FLAGS_SWITCH_TO_USER;
     current_task->flag ^= PCB_FLAGS_KTHREAD;
@@ -250,16 +249,10 @@ end:
   return;
 }
 
-__asm__(
-  ".globl timer_handle\n\t"
-  "timer_handle:\n\t"
-  _save_regs_asm_
-  "mov %rsp, %rdi\n\t"
-  "call timer_handle_c\n\t"
-  _restore_regs_asm_
-  "sti\n\t"
-  "iretq\n\t"
-);
+__asm__(".globl timer_handle\n\t"
+        "timer_handle:\n\t" _save_regs_asm_ "mov %rsp, %rdi\n\t"
+        "call timer_handle_c\n\t" _restore_regs_asm_ "sti\n\t"
+        "iretq\n\t");
 
 //简易轮转调度
 int scheduler(interrupt_frame_t *frame, regs_t *regs) {
@@ -341,8 +334,7 @@ void switch_to(pcb_t *source, pcb_t *target, interrupt_frame_t *frame,
       .rsp = new->rsp, // 栈指针
       .ss = 0x10       // 内核数据段选择子
   };
-  if (target->flag & PCB_FLAGS_KTHREAD == 0)
-  {
+  if (target->flag & PCB_FLAGS_KTHREAD == 0) {
     new_regs.cs = 0x20;
     new_regs.ss = 0x18;
   }

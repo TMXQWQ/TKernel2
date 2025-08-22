@@ -55,8 +55,8 @@ void tss_setup() {
   tss0.ist[4] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
   tss0.ist[5] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
   tss0.ist[6] = ((uint64_t)&tss_stack) + sizeof(tss_stack_t);
-  printkf("tss base addr:%p\r\n",&tss0);
-  printkf("tss ist0 addr:%p\r\n",(void*)tss0.ist[0]);
+  printkf("tss base addr:%p\r\n", &tss0);
+  printkf("tss ist0 addr:%p\r\n", (void *)tss0.ist[0]);
   __asm__ volatile("ltr %[offset];"
                    :
                    : [offset] "rm"((uint16_t)0x28U)

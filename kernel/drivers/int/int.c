@@ -2,13 +2,13 @@
 #include "debug.h"
 #include "hal.h"
 #include "hal_int.h"
+#include "idt.h"
 #include "page.h"
 #include "scheduler.h"
 #include <stdint.h>
-#include "idt.h"
 
-__attribute__((interrupt)) void
-page_fault_handle(interrupt_frame_t *frame, uint64_t error_code);
+__attribute__((interrupt)) void page_fault_handle(interrupt_frame_t *frame,
+                                                  uint64_t error_code);
 
 void set_intr_gate(unsigned int vector, uint8_t ist, void *handler) {
   _set_gate(&IDT_Table[vector], 0x8E, ist, handler); // 0x8E=中断门，DPL=0
