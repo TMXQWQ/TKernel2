@@ -589,7 +589,7 @@ int vfs_token_count(const char *path) {
 
 list_t *vfs_printk_ls(vfs_inode_t *i) {
   if (i->type != VFS_DIR) {
-    return -EETYPE;
+    return NULL;
   }
   list_t *ls = &(i->file_list);
   // printk("%p ,%p ", ls, ls->next);
