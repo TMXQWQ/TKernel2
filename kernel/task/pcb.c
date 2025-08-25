@@ -48,9 +48,6 @@ pcb_t *create_process(char *name) {
   return new_pgb;
 }
 
-#define C_F_CLONE_ADDRESS ((uint8_t)1 << 0) //克隆/共享虚拟地址空间
-#define C_F_CLONE_SOURCES ((uint8_t)1 << 1) //克隆/共享资源
-
 /**
  * 创建一个进程(特有的clone函数)
  * @param 新进程名
@@ -116,8 +113,7 @@ pcb_t *create_kernel_thread(int (*_start)(void *arg), void *args, char *name) {
   new_task->context0.rdi = (uint64_t)args;
   new_task->kernel_stack = (new_task->context0.rsp &= ~0xF); // 栈16字节对齐
   new_task->user_stack =
-      new_task->kernel_stack; // 内核级线程没有用户态的部分,
-                              // 所以用户栈句柄与内核栈句柄统一
+      new_task->kernel_stack;
   new_task->pid = now_pid++;
   new_task->page_dir = get_kernel_pagedir();
   new_task->cr3 = read_cr3();
@@ -151,8 +147,6 @@ int init_kmain(int *test) {
   //             PTE_USER || PTE_PRESENT || PTE_WRITEABLE);
   switch_to_user_mode(init_user_main);
   // TODO
-  // 跳转到init进程
-  // switch_to_user_mode(init_user_main);
   enable_intr();
   while (1) {
     // __asm__("int $0x40");

@@ -21,6 +21,7 @@ C_FLAGS		:= -Wall -Wextra -g3 -O0 -m64 -fno-builtin -fno-pie -fno-stack-protecto
                -mcmodel=large -mno-red-zone -mno-80387 $(C_FPU_MMX_SSE_FLAGS) -msoft-float -I include -MMD -I ./kernel/inc ./kernel
 OIB			:= $(shell find -name oib)
 UNAME		:= $(shell command -v uname)
+CC			:= gcc
 
 
 info: 
@@ -33,7 +34,7 @@ info:
 
 
 vkernel.bin: $(C_SOURCES) $(S_SOURCES)
-	make kernel.bin -C kernel
+	make kernel.bin -C kernel CC=$(CC)
 
 kernel.bin: vkernel.bin
 	ld vkernel.bin $(LD_FLAGS) -o kernel.bin

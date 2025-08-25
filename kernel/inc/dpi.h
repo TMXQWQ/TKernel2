@@ -33,6 +33,7 @@
         .get_index = name##_get_index      \
 }
 
+struct Driver;
 typedef struct Driver driver;
 
 typedef struct Driver_Handle //驱动处理程序

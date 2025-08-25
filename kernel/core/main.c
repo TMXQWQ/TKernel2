@@ -50,7 +50,6 @@ int kernel_main() {
   init_frame(); // 初始化内存帧
   printks("\n[KERNEL]\tMem Inited!\n");
   acpi_init();
-  vfs_init();
   // vfs_inode_t *i = vfs_open("/");
   // printks("inode\"/\"\tid:%d\tname:%s\n", i->id, i->name);
   // i = vfs_creat("/test.txt", VFS_FILE);
@@ -73,7 +72,7 @@ int kernel_main() {
   current_task = idle_pcb;
   enable_scheduler();
   __asm__("sti");
-  __asm__("int $0x20");
+  // __asm__("int $0x20");
   // switch_to(&(init_pcb->context0),&(idle_pcb->context0));
   while (1) {
     asm volatile("hlt");
