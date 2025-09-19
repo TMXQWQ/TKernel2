@@ -1,5 +1,9 @@
 # TKernel
 
+### 由于TKernel完成度远不如Uinxed-Kernel,且仓库主已在给Uinxed-Kernel提交commit,故本仓库决定停更,不再维护
+
+### 以下是原readme
+
 #### 介绍
 
     TKernel:一个简易微内核实现
@@ -16,3 +20,4 @@
 * [ ] FAT32
 * [ ] 实现用户层服务器
 * [ ] 实现驱动程序接口
+
