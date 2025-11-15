@@ -1,0 +1,22 @@
+---
+CompileFlags:
+  Add:
+    - "-Wall"
+    - "-Wextra"
+    - "-O3"
+    - "-g3"
+    - "-m64"
+    - "-fpie"
+    - "-ffreestanding"
+    - "-fno-optimize-sibling-calls"
+    - "-fno-stack-protector"
+    - "-fno-omit-frame-pointer"
+    - "-mstackrealign"
+    - "-mno-red-zone"
+    - "-I${workspaceFolder}/include"
+    - "-MMD"
+
+Diagnostics:
+  ClangTidy:
+    FastCheckFilter: Strict
+...
