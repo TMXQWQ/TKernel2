@@ -1,6 +1,6 @@
 #include "kernel.h"
 #include "limine.h"
-#include "serial.h"
+#include "drivers/ports/serial.h"
 
 void executable_entry(void)
 {

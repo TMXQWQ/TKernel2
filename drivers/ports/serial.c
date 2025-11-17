@@ -9,7 +9,7 @@
  *
  */
 
-#include "serial.h"
+#include "drivers/ports/serial.h"
 #include "common.h"
 // #include "printk.h"
 #include "stdint.h"
