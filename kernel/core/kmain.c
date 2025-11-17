@@ -1,6 +1,5 @@
+#include "drivers/ports/stty.h"
 #include "kernel.h"
-#include "limine.h"
-#include "drivers/ports/serial.h"
 
 void executable_entry(void)
 {
@@ -20,7 +19,10 @@ void executable_entry(void)
 
 void kernel_entry(void)
 {
-    init_serial();
-    write_serial(SERIAL_PORT_1, 'T');
+    // init_parallel();
+    // write_parallel(PARALLEL_PORT_1, 'T');
+    // write_serial(SERIAL_PORT_1, 'T');
+    stty_info.father.ops.install();
+    stty_info.father.ops.ioctl(STTY_WRITE, 1, 'T');
     for (;;);
 }

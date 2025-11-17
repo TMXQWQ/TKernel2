@@ -12,12 +12,12 @@ typedef struct DPI_OP {
 } dpi_op;
 
 typedef struct DPI_INFO {
-        union name {
+        union {
                 uintptr_t name_reg;
 #if ARCH == x86_64
                 uint8_t name_char[8];
 #endif
-        };
+        } name;
         dpi_op ops;
 } dpi_info;
 

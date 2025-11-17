@@ -1,0 +1,18 @@
+#ifndef STTY_H
+#define STTY_H
+#include "drivers/tty/tty.h"
+#define STTY_INIT  (uintptr_t)0
+#define STTY_OPEN  (uintptr_t)1
+#define STTY_READ  (uintptr_t)2
+#define STTY_WRITE (uintptr_t)3
+#define STTY_CLOSE (uintptr_t)4
+
+extern tty_info stty_info;
+extern int is_stty_enable;
+
+uintptr_t stty_ioctl(uintptr_t op, uintptr_t arg1, uintptr_t arg2);
+uintptr_t stty_install();
+uintptr_t stty_uninstall();
+uintptr_t stty_enable();
+uintptr_t stty_disable();
+#endif
