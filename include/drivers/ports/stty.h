@@ -6,9 +6,12 @@
 #define STTY_READ  (uintptr_t)2
 #define STTY_WRITE (uintptr_t)3
 #define STTY_CLOSE (uintptr_t)4
+// Write Buf -> WB
+#define STTY_WB       (uintptr_t)5
+#define STTY_WRITEBUF STTY_WB
 
 extern tty_info stty_info;
-extern int is_stty_enable;
+extern int      is_stty_enable;
 
 uintptr_t stty_ioctl(uintptr_t op, uintptr_t arg1, uintptr_t arg2);
 uintptr_t stty_install();

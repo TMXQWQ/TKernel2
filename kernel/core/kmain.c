@@ -1,5 +1,6 @@
 #include "drivers/ports/stty.h"
 #include "kernel.h"
+#include <stdint.h>
 
 void executable_entry(void)
 {
@@ -23,6 +24,8 @@ void kernel_entry(void)
     // write_parallel(PARALLEL_PORT_1, 'T');
     // write_serial(SERIAL_PORT_1, 'T');
     stty_info.father.ops.install();
-    stty_info.father.ops.ioctl(STTY_WRITE, 1, 'T');
-    for (;;);
+    // stty_info.father.ops.ioctl(STTY_WRITE, 1, 'T');
+    // stty_info.father.ops.ioctl(STTY_READ, 1, 0); //clear
+    stty_info.father.ops.ioctl(STTY_WRITEBUF, 1, (uintptr_t)"Hello World\0");
+    for (;;) stty_info.father.ops.ioctl(STTY_WRITE, 1, stty_info.father.ops.ioctl(STTY_READ, 1, 0));
 }

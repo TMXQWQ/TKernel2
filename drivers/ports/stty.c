@@ -25,9 +25,16 @@ uintptr_t stty_ioctl(uintptr_t op, uintptr_t arg1, uintptr_t arg2)
     switch (op) {
         case STTY_INIT :
             init_serial();
+            read_serial(SERIAL_PORT_1 + arg1 - 1); // clear
             break;
         case STTY_WRITE :
             write_serial(SERIAL_PORT_1 + arg1 - 1, (uint8_t)arg2);
+            break;
+        case STTY_READ :
+            return read_serial(SERIAL_PORT_1 + arg1 - 1);
+            break;
+        case STTY_WB : // test! will be remove in future awa
+            for (uintptr_t i = 0; *((uint8_t *)arg2 + i) != '\0'; i++) write_serial(SERIAL_PORT_1 + arg1 - 1, *((uint8_t *)arg2 + i));
             break;
         default :
             break;
