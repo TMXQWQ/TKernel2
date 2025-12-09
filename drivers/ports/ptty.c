@@ -5,7 +5,7 @@
 int is_ptty_enable = 0;
 
 tty_info ptty_info = {
-    .father = {
+    .info = {
 #if ARCH == x86_64
                .name.name_char = {"PTTY   "},
 #endif

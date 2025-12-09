@@ -120,8 +120,10 @@ all: info TKernel-test.iso
 	$(Q)clang-tidy $< $(CHECKS) -- $(C_FLAGS)
 
 info:
-	$(Q)printf "Uinxed-Kernel Compile Script.\n"
-	$(Q)printf "Copyright 2020 ViudiraTech. Based on the GPLv3 license.\n"
+	$(Q)printf "TKernel2 Compile Script.\n"
+	$(Q)printf "By Microfish and TMX.\n"
+	$(Q)printf "Thanks for ViudiraTech awa.\n"
+	$(Q)printf "Copyright 2020 TMX. Based on the GPLv3 license.\n"
 	$(Q)printf "Based on the GPL-3.0 open source license.\n"
 	$(Q)echo
 

@@ -1,62 +1,65 @@
-#include "drivers/ports/stty.h"
+#include "drivers/ports/ttys.h"
 #include "drivers/ports/serial.h"
+#include "drivers/tty/tty.h"
 #include "stdint.h"
 
 int is_stty_enable = 0;
 
-tty_info stty_info = {
-    .father = {
+tty_info ttys_info = {
+    .info = {
 #if ARCH == x86_64
-               .name.name_char = {"STTY   "},
+               .name.name_char = {"TTYS   "},
 #endif
                .ops = {
-            .ioctl     = stty_ioctl,
-            .install   = stty_install,
-            .uninstall = stty_uninstall,
-            .enable    = stty_enable,
-            .disable   = stty_disable,
+            .ioctl     = ttys_ioctl,
+            .install   = ttys_install,
+            .uninstall = ttys_uninstall,
+            .enable    = ttys_enable,
+            .disable   = ttys_disable,
         },
     }
 };
 
-uintptr_t stty_ioctl(uintptr_t op, uintptr_t arg1, uintptr_t arg2)
+uintptr_t ttys_ioctl(uintptr_t op, uintptr_t arg1, uintptr_t arg2)
 {
     (void)arg1, (void)arg2;
     switch (op) {
-        case STTY_INIT :
+        case TTY_INIT :
             init_serial();
             read_serial(SERIAL_PORT_1 + arg1 - 1); // clear
             break;
-        case STTY_WRITE :
+        case TTY_WRITE :
             write_serial(SERIAL_PORT_1 + arg1 - 1, (uint8_t)arg2);
             break;
-        case STTY_READ :
+        case TTY_READ :
             return read_serial(SERIAL_PORT_1 + arg1 - 1);
             break;
-        case STTY_WB : // test! will be remove in future awa
+        case TTY_WB : // test! will be remove in future awa
             for (uintptr_t i = 0; *((uint8_t *)arg2 + i) != '\0'; i++) write_serial(SERIAL_PORT_1 + arg1 - 1, *((uint8_t *)arg2 + i));
             break;
+        case TTY_GET_INFO:
+            return (uintptr_t)&ttys_info;
         default :
             break;
     }
     return 0;
 }
-uintptr_t stty_install()
+uintptr_t ttys_install()
 {
-    stty_ioctl(STTY_INIT, 0, 0);
+    ttys_ioctl(TTY_INIT, 0, 0);
     return 0;
 }
-uintptr_t stty_uninstall()
+uintptr_t ttys_uninstall()
 {
-    stty_ioctl(STTY_CLOSE, 0, 0);
+    ttys_ioctl(TTY_CLOSE, 0, 0);
     return 0;
 }
-uintptr_t stty_enable()
+uintptr_t ttys_enable()
 {
     is_stty_enable = 1;
     return 0;
 }
-uintptr_t stty_disable()
+uintptr_t ttys_disable()
 {
     is_stty_enable = 0;
     return 0;
