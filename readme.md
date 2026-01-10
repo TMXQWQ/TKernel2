@@ -1,6 +1,6 @@
 ## TKernel2
 
-*Implementation of a simple operating system kernel. *
+  *Implementation of a simple operating system kernel.*
 
 ### Thanks:
 
