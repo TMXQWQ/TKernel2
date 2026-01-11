@@ -1,4 +1,5 @@
-#include <stdint.h>
+#include "cpio.h"
+#include "limine_module.h"
 
 void executable_entry(void)
 {
@@ -18,5 +19,8 @@ void executable_entry(void)
 
 void kernel_entry(void)
 {
+    lmodule_init();
+    lmodule_t *mod = get_lmodule("initrd");
+    cpio_parse((newc_header *)mod->data);
     for (;;);
 }
