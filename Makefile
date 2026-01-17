@@ -134,10 +134,11 @@ kernel.bin: $(OBJS) $(LIBS)
 kerneldump.log: kernel.bin
 	$(V)objdump -d kernel.bin > kerneldump.log &
 
-TKernel-test.iso: kernel.bin
+TKernel-test.iso: kernel.bin initrd.img
 	$(Q)echo
 	$(Q)printf "\033[1;32m[ISO]\033[0m Packing ISO file...\n"
 	$(Q)cp -a assets/Limine iso
+	$(Q)cp initrd.img iso/Limine
 	$(Q)cp $< iso/EFI/Boot
 	$(Q)xorriso -as mkisofs -R -r -J -b Limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
                 -boot-info-table -hfsplus -apm-block-size 2048 -efi-boot-part --efi-boot-image --protective-msdos-label \
@@ -173,7 +174,8 @@ run_smp: TKernel-test.iso
 	qemu-system-x86_64 $(QEMU_FLAGS) $(QEMU_KVM) -smp $(QEMU_SMP) -cdrom $<
 
 clean:
-	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso
+	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso initrd.img
+	$(Q)make clean -C init
 	$(Q)printf "\033[1;32m[ Done ]\033[0m Clean completed.\n\n"
 
 gen.clangd:
@@ -194,4 +196,6 @@ check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
 -include $(DEPS)
 
 initrd.img: $(INIT_SOURCES)
+	$(Q)printf "\033[1;32m[ Done ]\033[0m Building initrd.img ....\n\n"
+	make initrd.img -C init
 	

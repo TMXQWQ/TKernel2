@@ -47,6 +47,7 @@ newc_filesystem cpio_parse(newc_header *base)
         }
         file_list[i] = (newc_file) {ino, size, (align(((uintptr_t)header + 110 + namesize))), (char*)header->c_name};
         header       = (newc_header *)(align((uintptr_t)(((uintptr_t)header) + 110 + namesize + size)));
+        ncfs.size++;
     }
 #undef tmp   //(a, b)
 #undef align //(addr)

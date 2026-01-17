@@ -50,6 +50,7 @@
 # Project Objectives
 kernel.bin
 TKernel-test.iso
+initrd.img
 
 # Clangd
 .clangd

@@ -1,3 +1,6 @@
+#ifndef CPIO_H
+#define CPIO_H
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -37,3 +40,5 @@ typedef struct {
 } newc_filesystem;
 
 newc_filesystem cpio_parse(newc_header *base);
+
+#endif

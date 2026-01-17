@@ -1,5 +1,7 @@
 #include "cpio.h"
+#include "elf_parse.h"
 #include "limine_module.h"
+#include <stddef.h>
 
 void executable_entry(void)
 {
@@ -21,7 +23,16 @@ void executable_entry(void)
 void kernel_entry(void)
 {
     lmodule_init();
-    lmodule_t *mod = get_lmodule("initrd");
-    cpio_parse((newc_header *)mod->data);
+    lmodule_t      *mod  = get_lmodule("initrd");
+    newc_filesystem cpio = cpio_parse((newc_header *)mod->data);
+    enter           test;
+    for (size_t i = 0; i < cpio.size; i++) {
+        char *tmp = cpio.file_list[i].name;
+        for (int j = 0; tmp[j] != '\0'; j++)
+            if (tmp[j] == '.' && tmp[j + 1] != '\0' && tmp[j + 2] != '\0' && tmp[j + 3] != '\0' && tmp[j + 1] == 't' && tmp[j + 2] == 'k'
+                && tmp[j + 3] == 'm')
+                test = elf_pie_enter_parse((Elf64_Ehdr *)cpio.file_list[i].data_ptr);
+    }
+    test(NULL);
     for (;;);
 }
