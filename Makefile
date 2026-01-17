@@ -83,7 +83,8 @@ ifneq ($(CONFIG_SERIAL_STOP_BITS),)
   C_CONFIG += -DSERIAL_STOP_BITS=$(CONFIG_SERIAL_STOP_BITS)
 endif
 
-C_SOURCES      := $(shell find * -name "*.c")
+C_SOURCES      := $(shell find kernel -name "*.c") $(shell find boot -name "*.c") $(shell find lib -name "*.c")
+INIT_SOURCES	:= $(shell find init -name "*.c")
 S_SOURCES      := $(shell find * -name "*.s")
 HEADERS        := $(shell find * -name "*.h")
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
@@ -191,3 +192,6 @@ check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
 	$(Q)printf "\033[1;32m[ Done ]\033[0m Code Checks complete.\n\n"
 
 -include $(DEPS)
+
+initrd.img: $(INIT_SOURCES)
+	

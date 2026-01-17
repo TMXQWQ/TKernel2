@@ -4,6 +4,7 @@
 void executable_entry(void)
 {
     const char msg[] = "Logically you should use Limine to boot it instead of executing it directly, right?\n\n";
+    for (;;);
     __asm__ volatile("mov $1, %%rax\n"
                      "mov $1, %%rdi\n"
                      "lea %[msg], %%rsi\n"

@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 typedef struct __attribute__((packed)) {
-        uint8_t c_magic[6]; // 魔数："070701"（newc）或"070702"（crc）
+        uint8_t c_magic[6]; // 魔数："070701"(newc)或"070702"(crc)
         uint8_t c_ino[8];   // inode号，16进制ASCII
         //          --------------------ignore---------------------
         uint8_t c_mode[8];  // 文件模式和类型，16进制ASCII  ignore
