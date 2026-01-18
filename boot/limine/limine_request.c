@@ -12,6 +12,8 @@
 #include "kernel.h"
 #include "limine.h"
 
+void limine_enter(void);
+
 __attribute__((used, section(".limine_requests"))) volatile struct limine_rsdp_request rsdp_request = {
     .id       = LIMINE_RSDP_REQUEST,
     .revision = 0,
@@ -55,7 +57,7 @@ __attribute__((used, section(".limine_requests"))) volatile struct limine_kernel
 __attribute__((used, section(".limine_requests"))) volatile struct limine_entry_point_request entry_point_request = {
     .id       = LIMINE_ENTRY_POINT_REQUEST,
     .revision = 3,
-    .entry    = &kernel_entry,
+    .entry    = &limine_enter,
 };
 
 __attribute__((used, section(".limine_requests"))) volatile struct limine_module_request module_request

@@ -93,7 +93,7 @@ LIBS           := $(wildcard libs/lib*.a)
 PWD            := $(shell pwd)
 
 QEMU           := qemu-system-x86_64
-QEMU_FLAGS     := -machine q35 -bios assets/ovmf-code.fd 
+QEMU_FLAGS     := -machine q35 -bios assets/ovmf-code.fd -serial stdio
 QEMU_KVM	   := --enable-kvm
 QEMU_SMP	   := 2
 

@@ -9,7 +9,7 @@ endif
 C_SOURCES      := $(shell find * -name "*.c")
 C_FLAGS        := -Wall -Wextra -O0 -g3 -m64 -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -mstackrealign -mno-red-zone -I include -MMD
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
-LD_FLAGS       := -nostdlib -m elf_x86_64
+LD_FLAGS       := -nostdlib -m elf_x86_64 -e module_enter
 
 %.o: %.c
 	$(V)$(CC) $(C_FLAGS) $(C_CONFIG) -c -o $@ $<

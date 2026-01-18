@@ -17,6 +17,7 @@
 *.lo
 *.o
 *.obj
+*.tkm
 
 # Precompiled Headers
 *.gch

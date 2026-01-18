@@ -1,4 +1,5 @@
-int module_enter()
+int module_enter(void* func)
 {
-    for (;;);
+    ((void(*)(const char *format, ...))func)("test is running!!!\n");
+    return 114514;
 }

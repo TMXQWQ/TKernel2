@@ -32,3 +32,14 @@ char *strrchr(const char *str, int c)
     return (char *)finded;
 #endif
 }
+
+size_t strlen(const char *str)
+{
+#if defined(__builtin_strlen)
+    return __builtin_strlen(str);
+#else
+    size_t len = 0;
+    while (*str++ != '\0') len++;
+    return len;
+#endif
+}

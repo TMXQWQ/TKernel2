@@ -15,7 +15,7 @@
 #define BUILD_DATE     __DATE__  // Compilation Date
 #define BUILD_TIME     __TIME__  // Compile time
 #define KERNEL_NAME    "TKernel" // Kernel name
-#define KERNEL_VERSION "v0.0.1b" // Kernel version (x.x.x)
+#define KERNEL_VERSION "v0.0.1a" // Kernel version (x.x.x)
 #define STACK_SIZE     32768     // stack size
 #define KERNEL_ST_SZ   131072    // kernel stack size 128k
 
@@ -46,6 +46,13 @@ extern volatile struct limine_hhdm_request           hhdm_request;
 extern volatile struct limine_kernel_address_request kernel_address_request;
 extern volatile struct limine_entry_point_request    entry_point_request;
 extern volatile struct limine_module_request         module_request;
+
+extern enum {
+    Unkown = 0,
+    Limine = 1,
+    Linux  = 2, // unsupport now
+    EFI    = 3, // unsupport now
+} bootloader;
 
 /* Executable entry */
 void executable_entry(void);

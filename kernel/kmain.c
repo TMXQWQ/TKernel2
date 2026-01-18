@@ -1,7 +1,12 @@
 #include "cpio.h"
 #include "elf_parse.h"
+#include "kernel.h"
 #include "limine_module.h"
+#include "printk.h"
+#include "serial.h"
 #include <stddef.h>
+
+typeof(bootloader) bootloader;
 
 void executable_entry(void)
 {
@@ -33,6 +38,8 @@ void kernel_entry(void)
                 && tmp[j + 3] == 'm')
                 test = elf_pie_enter_parse((Elf64_Ehdr *)cpio.file_list[i].data_ptr);
     }
-    test(NULL);
+    init_serial();
+    int a = test((void*)&printk);
+    printk("test:%d\n", a);
     for (;;);
 }
