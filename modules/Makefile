@@ -12,9 +12,10 @@ OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 DEPS           := $(OBJS:%.o=%.d)
 
 test.tkm: test/test.c
-	make $@ -C test
+	$(V) make test.tkm -C test
 
 initrd.img: $(C_SOURCES) test.tkm
+	$(V)
 	find . -maxdepth 1 -name "*.tkm" | cpio --format=newc -o > $@
 	cp $@ ../
 

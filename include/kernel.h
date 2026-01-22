@@ -12,6 +12,7 @@
 #ifndef INCLUDE_UINXED_H_
 #define INCLUDE_UINXED_H_
 
+#include <stdint.h>
 #define BUILD_DATE     __DATE__  // Compilation Date
 #define BUILD_TIME     __TIME__  // Compile time
 #define KERNEL_NAME    "TKernel" // Kernel name
@@ -47,12 +48,20 @@ extern volatile struct limine_kernel_address_request kernel_address_request;
 extern volatile struct limine_entry_point_request    entry_point_request;
 extern volatile struct limine_module_request         module_request;
 
-extern enum {
+extern enum BL {
     Unkown = 0,
     Limine = 1,
     Linux  = 2, // unsupport now
     EFI    = 3, // unsupport now
 } bootloader;
+
+typedef struct {
+        const char        *kernel_name;
+        const char        *version;
+        typeof(bootloader) bl;
+} kernel_info;
+
+extern kernel_info kinfo;
 
 /* Executable entry */
 void executable_entry(void);

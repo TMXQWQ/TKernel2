@@ -84,7 +84,7 @@ ifneq ($(CONFIG_SERIAL_STOP_BITS),)
 endif
 
 C_SOURCES      := $(shell find kernel -name "*.c") $(shell find boot -name "*.c") $(shell find lib -name "*.c")
-INIT_SOURCES	:= $(shell find init -name "*.c")
+MOD_SOURCES	:= $(shell find modules -name "*.c")
 S_SOURCES      := $(shell find * -name "*.s")
 HEADERS        := $(shell find * -name "*.h")
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
@@ -174,8 +174,8 @@ run_smp: TKernel-test.iso
 	qemu-system-x86_64 $(QEMU_FLAGS) $(QEMU_KVM) -smp $(QEMU_SMP) -cdrom $<
 
 clean:
+	$(Q)make clean -C modules
 	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso initrd.img
-	$(Q)make clean -C init
 	$(Q)printf "\033[1;32m[ Done ]\033[0m Clean completed.\n\n"
 
 gen.clangd:
@@ -195,7 +195,7 @@ check: $(C_SOURCES:%=%.tidy) $(S_SOURCES:%=%.tidy) $(HEADERS:%=%.tidy)
 
 -include $(DEPS)
 
-initrd.img: $(INIT_SOURCES)
-	$(Q)printf "\033[1;32m[ Done ]\033[0m Building initrd.img ....\n\n"
-	make initrd.img -C init
+initrd.img: $(MOD_SOURCES)
+	$(Q)printf "\033[1;32m[ Build ]\033[0m Building initrd.img ....\n\n"
+	make initrd.img -C modules
 	
