@@ -1,8 +1,9 @@
 #ifndef RPC_H
 #define RPC_H
 
-#define rpc_call(ns, name, ...) (rpc_get(ns, name))(__VA_ARGS__);
 #include <stdint.h>
+#define MAX_RPC_NUM 16
+#define rpc_call(ns, name, ...) (rpc_get(ns, name))(__VA_ARGS__);
 typedef uintptr_t (*rpc_func)(uintptr_t, ...);
 
 typedef struct {

@@ -9,12 +9,14 @@ module_info test_info = {
     module_init,
 };
 
-uintptr_t module_init(kernel_info *)
+uintptr_t module_init(kernel_info *ki)
 {
+    (void)ki;
     return 1;
 }
 module_info *_start(void)
 {
+    test_info.name = "TEST";
     test_info.init = module_init;
     return &test_info;
 }
