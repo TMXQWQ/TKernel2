@@ -1,0 +1,2 @@
+# 加载顺序取决于此
+MODULE_LIST := test.tkm test2.tkm

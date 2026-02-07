@@ -34,20 +34,8 @@ void executable_entry(void)
 
 void kernel_entry(void)
 {
-    lmodule_t      *mod  = get_lmodule("initrd");
-    newc_filesystem cpio = cpio_parse((newc_header *)mod->data);
-    enter           test;
-    for (size_t i = 0; i < cpio.size; i++) {
-        char *tmp = cpio.file_list[i].name;
-        for (int j = 0; tmp[j] != '\0'; j++)
-            if (tmp[j] == '.' && tmp[j + 1] != '\0' && tmp[j + 2] != '\0' && tmp[j + 3] != '\0' && tmp[j + 1] == 't' && tmp[j + 2] == 'k'
-                && tmp[j + 3] == 'm')
-                test = elf_pie_enter_parse((Elf64_Ehdr *)cpio.file_list[i].data_ptr);
-    }
-    // 以下是实际上的内核主程序，以上内容以后要归到limine_enter里
     init_serial();
-    printk("Boot By : %s\n", bootloader == Limine ? "Limine" : "Unkown");
-    module_info* a = ((mod_enter)(uintptr_t)test)();
-    printk("test returned:%d\n", a->init(&kinfo));
+    printk("[ Kernel ] Boot By : %s\n", bootloader == Limine ? "Limine" : "Unkown");
+    init_mod();
     for (;;);
 }
