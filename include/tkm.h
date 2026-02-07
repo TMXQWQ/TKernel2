@@ -10,4 +10,9 @@ typedef struct {
 } module_info;
 
 typedef module_info *(*mod_enter)();
+
+int init_mod();
+
+module_info *load_mod(mod_enter);
+
 #endif

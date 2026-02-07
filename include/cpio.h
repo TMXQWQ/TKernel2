@@ -41,4 +41,7 @@ typedef struct {
 
 newc_filesystem cpio_parse(newc_header *base);
 
+extern newc_filesystem ncfs;
+extern newc_file       file_list[128];
+
 #endif

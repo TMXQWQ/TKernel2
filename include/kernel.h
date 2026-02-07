@@ -12,7 +12,6 @@
 #ifndef INCLUDE_UINXED_H_
 #define INCLUDE_UINXED_H_
 
-#include <stdint.h>
 #define BUILD_DATE     __DATE__  // Compilation Date
 #define BUILD_TIME     __TIME__  // Compile time
 #define KERNEL_NAME    "TKernel" // Kernel name
