@@ -14,7 +14,7 @@ int init_mod()
                 && tmp[j + 3] == 'm') {
                 test = elf_pie_enter_parse((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
                 char* name = load_mod((mod_enter)(uintptr_t)test)->name;
-                printk("[ Module Loader ]Load module %s.\n", name);
+                printk("[ Module ]Load module %s.\n", name);
             }
     }
     return 0;

@@ -1,12 +1,7 @@
-#include "cpio.h"
-#include "elf_parse.h"
 #include "kernel.h"
-#include "limine_module.h"
 #include "printk.h"
 #include "serial.h"
 #include "tkm.h"
-#include <stddef.h>
-#include <stdint.h>
 
 typeof(bootloader) bootloader;
 
@@ -36,6 +31,9 @@ void kernel_entry(void)
 {
     init_serial();
     printk("[ Kernel ] Boot By : %s\n", bootloader == Limine ? "Limine" : "Unkown");
+    printk("[ Kernel ] Kernel: %s (%s)\n", KERNEL_NAME, KERNEL_VERSION);
+    printk("[ Kernel ] BUILD_DATE: %s, BUILD_TIME: %s\n", BUILD_DATE, BUILD_TIME);
+    printk("[ Kernel ] COMPILER_NAME: %s\n", COMPILER_NAME);
     init_mod();
     for (;;);
 }

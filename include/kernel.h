@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef INCLUDE_UINXED_H_
-#define INCLUDE_UINXED_H_
+#ifndef INCLUDE_KERNEL_H_
+#define INCLUDE_KERNEL_H_
 
 #define BUILD_DATE     __DATE__  // Compilation Date
 #define BUILD_TIME     __TIME__  // Compile time
@@ -68,4 +68,4 @@ void executable_entry(void);
 /* Kernel entry */
 void kernel_entry(void);
 
-#endif // INCLUDE_UINXED_H_
+#endif // INCLUDE_KERNEL_H_
