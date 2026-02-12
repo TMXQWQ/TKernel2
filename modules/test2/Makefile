@@ -1,3 +1,5 @@
+-include ../../.config
+
 ifeq ($(VERBOSE), 1)
   V=
   Q=
@@ -12,7 +14,7 @@ OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 LD_FLAGS       := -nostdlib -m elf_x86_64 -e _start
 
 %.o: %.c
-	$(V)$(CC) $(C_FLAGS) $(C_CONFIG) -c -o $@ $<
+	$(V)$(CC) $(C_FLAGS) -c -o $@ $<
 
 test2.tkm:	$(OBJS)
 	$(V)$(LD) $(LD_FLAGS) -o $@ $^

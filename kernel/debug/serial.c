@@ -14,6 +14,8 @@
 #include "printk.h"
 #include "stdint.h"
 
+#ifdef __x86_64__
+
 /* Serial port LCR data configuration */
 static uint8_t serial_calculate_lcr(void)
 {
@@ -111,17 +113,10 @@ void init_serial(void)
     uint16_t com_ports[4] = {SERIAL_PORT_1, SERIAL_PORT_2, SERIAL_PORT_3, SERIAL_PORT_4};
 
     for (int i = 0; i < 4; i++) {
-        if (serial_exists(com_ports[i])) {
-            init_serial_port(com_ports[i]);
-        }
+        if (serial_exists(com_ports[i])) { init_serial_port(com_ports[i]); }
     }
-    stdio.data = (void*)(uintptr_t)SERIAL_PORT_1;
+    stdio.data    = (void *)(uintptr_t)SERIAL_PORT_1;
     stdio.handler = serial_handle;
-}
-
-uint8_t serial_handle(struct writer *writer, char ch){
-    write_serial((uintptr_t)(writer->data), ch);
-    return 0;
 }
 
 /* Check whether the serial port is ready to read */
@@ -154,4 +149,12 @@ void write_serial(uint16_t port, uint8_t data)
 uint8_t get_serial_status(uint16_t port)
 {
     return inb(port + SERIAL_REG_LSR);
+}
+
+#endif
+
+uint8_t serial_handle(struct writer *writer, char ch)
+{
+    write_serial((uintptr_t)(writer->data), ch);
+    return 0;
 }

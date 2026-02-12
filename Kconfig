@@ -1,5 +1,13 @@
 mainmenu "TKernel"
 
+menu "platform config"
+  config ARCH
+    string   "Target arch."
+    default "x86_64"
+    help
+      "Target arch. Support x86_64, riscv"
+endmenu
+
 menu "Kernel debugging"
 
   config KERNEL_LOG
@@ -41,6 +49,7 @@ menu "Processor configuration"
   menu "Extended instruction set"
 
     config CPU_FEATURE_FPU
+      depends on ARCH = "x86_64"
       bool "Enable X87FPU (Intel 80X87 Floating-Point Unit)"
       default y
       help

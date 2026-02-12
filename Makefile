@@ -92,7 +92,7 @@ DEPS           := $(OBJS:%.o=%.d)
 LIBS           := $(wildcard libs/lib*.a)
 PWD            := $(shell pwd)
 
-QEMU           := qemu-system-x86_64
+QEMU           := qemu-system-$(CONFIG_ARCH)
 QEMU_FLAGS     := -machine q35 -bios assets/ovmf-code.fd -serial stdio
 QEMU_KVM	   := --enable-kvm
 QEMU_SMP	   := 2
@@ -101,8 +101,11 @@ CHECKS         := -quiet -checks=-*,clang-analyzer-*,bugprone-*,cert-*,misc-*,pe
 
 # If you want to get more details of `dump_stack`, you need to replace `-O3` with `-O0` or '-Os'.
 # `-fno-optimize-sibling-calls` is for `dump_stack` to work properly.
-C_FLAGS        := -Wall -Wextra -O0 -g3 -m64 -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -mstackrealign -mno-red-zone -I include -MMD
-LD_FLAGS       := -nostdlib -T assets/linker.ld -m elf_x86_64
+ifeq ($(CONFIG_ARCH),"x86_64")
+	C_FLAGS        := -Wall -Wextra -O0 -g3 -m64 -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -mstackrealign -mno-red-zone -I include -MMD
+	LD_FLAGS       := -nostdlib -T assets/linker.ld -m elf_x86_64
+endif
+
 
 all: info TKernel-test.iso
 

@@ -1,3 +1,6 @@
+-include ../.config
+-include module_list.txt
+
 ifeq ($(VERBOSE), 1)
   V=
   Q=
@@ -10,12 +13,11 @@ C_SOURCES      := $(shell find * -name "*.c")
 tkms      := $(shell find * -name "*.tkm")
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 DEPS           := $(OBJS:%.o=%.d)
--include module_list.txt
 
-test.tkm: test/test.c
+test.tkm: $(C_SOURCES)
 	$(V) make test.tkm -C test
 
-test2.tkm: test2/test.c
+test2.tkm: $(C_SOURCES)
 	$(V) make test2.tkm -C test2
 
 initrd.img: $(C_SOURCES) $(MODULE_LIST)
