@@ -1,3 +1,4 @@
+#include "common.h"
 #include "cpio.h"
 #include "kernel.h"
 #include "limine_module.h"
@@ -11,5 +12,6 @@ void limine_enter(void)
     newc_filesystem cpio = cpio_parse((newc_header *)mod->data);
     ncfs                 = cpio;
     kernel_entry();
-    for (;;) __asm__("hlt");
+    // for (;;) __asm__("hlt");
+    for(;;) krn_halt();
 }

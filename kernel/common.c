@@ -13,6 +13,8 @@
 #include "stddef.h"
 #include "stdint.h"
 
+#ifdef __x86_64__ 
+
 /* Port write (8 bits) */
 void outb(uint16_t port, uint8_t value)
 {
@@ -229,3 +231,105 @@ __attribute__((noinline)) void compiler_barrier(void)
 {
     __asm__ volatile("" ::: "memory");
 }
+
+#endif
+
+#ifdef __aarch64__
+
+#define outb(port, value)      __compiletime_error("ARM: use mmio_write8(addr, value)")
+#define inb(port)             __compiletime_error("ARM: use mmio_read8(addr)")
+#define outw(port, value)     __compiletime_error("ARM: use mmio_write16(addr, value)")
+#define inw(port)            __compiletime_error("ARM: use mmio_read16(addr)")
+#define outl(port, value)     __compiletime_error("ARM: use mmio_write32(addr, value)")
+#define inl(port)            __compiletime_error("ARM: use mmio_read32(addr)")
+#define insw(port, buf, n)   __compiletime_error("ARM: use mmio_reads(addr, buf, count)")
+#define outsw(port, buf, n)  __compiletime_error("ARM: use mmio_writes(addr, buf, count)")
+#define insl(port, addr, cnt) __compiletime_error("ARM: use mmio_readl(addr, buf, count)")
+#define outsl(port, addr, cnt) __compiletime_error("ARM: use mmio_writel(addr, buf, count)")
+
+/* Write a 32-bit data to the specified memory address */
+void mmio_write32(uint32_t *addr, uint32_t data)
+{
+    *(volatile uint32_t *)addr = data;
+}
+
+/* Write a 64-bit data to the specified memory address */
+void mmio_write64(void *addr, uint64_t data)
+{
+    *(volatile uint64_t *)addr = data;
+}
+
+/* Read a 32-bit data from the specified memory address */
+uint32_t mmio_read32(void *addr)
+{
+    return *(volatile uint32_t *)addr;
+}
+
+/* Read a 64-bit data from the specified memory address */
+uint64_t mmio_read64(void *addr)
+{
+    return *(volatile uint64_t *)addr;
+}
+
+// CR3 → TTBR0_EL1 / TTBR1_EL1（页表基址）
+inline uint64_t get_ttbr0_el1(void) {
+    uint64_t val;
+    __asm__ volatile("mrs %0, ttbr0_el1" : "=r"(val));
+    return val;
+}
+
+inline void flush_tlb(uint64_t addr) {
+    // 将虚拟地址写入 TLBI VAAE1IS（按地址，EL1，内部共享）
+    __asm__ volatile("tlbi vaae1is, %0" : : "r"(addr) : "memory");
+    // 同步上下文
+    __asm__ volatile("dsb ish; isb" : : : "memory");
+}
+
+inline void flush_tlb_all(void) {
+    __asm__ volatile("tlbi vmalle1is; dsb ish; isb" : : : "memory");
+}
+
+#define get_cr3() get_ttbr0_el1()
+
+inline uint64_t get_sp_el0(void) {
+    uint64_t sp;
+    __asm__ volatile("mov %0, sp" : "=r"(sp));  // sp 是 SP_EL0
+    return sp;
+}
+#define get_rsp() get_sp_el0()
+
+inline void enable_intr(void) {
+    // 清除 I 位（IRQ）和 F 位（FIQ）
+    __asm__ volatile("msr daifclr, #2" : : : "memory"); // 2 = 清除 I (IRQ)
+    // 如果需要同时开启 FIQ：msr daifclr, #3
+}
+inline void disable_intr(void) {
+    // 设置 I 位（IRQ）
+    __asm__ volatile("msr daifset, #2" : : : "memory");
+}
+inline void krn_halt(void) {
+    disable_intr();
+    while (1) {
+        __asm__ volatile("wfi" : : : "memory"); // 等待中断，但中断已被禁用，等效于暂停
+    }
+}
+// 数据内存屏障（DMB）
+inline void dmb_sy(void) {
+    __asm__ volatile("dmb sy" : : : "memory");
+}
+// 数据同步屏障（DSB）
+inline void dsb_sy(void) {
+    __asm__ volatile("dsb sy" : : : "memory");
+}
+// 指令同步屏障（ISB）
+inline void isb_sy(void) {
+    __asm__ volatile("isb" : : : "memory");
+}
+
+/* Compiler barrier */
+__attribute__((noinline)) void compiler_barrier(void)
+{
+    __asm__ volatile("" ::: "memory");
+}
+
+#endif
