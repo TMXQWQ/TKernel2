@@ -13,9 +13,11 @@ C_FLAGS        := -Wall -Wextra -O0 -g3 -m64 -fpie -ffreestanding -fno-optimize-
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 LD_FLAGS       := -nostdlib -m elf_x86_64 -e _start
 
+all: test2.tkm
+
 %.o: %.c
 	$(V)$(CC) $(C_FLAGS) -c -o $@ $<
 
 test2.tkm:	$(OBJS)
 	$(V)$(LD) $(LD_FLAGS) -o $@ $^
-	cp $@ ../
+	$(Q) cp $@ ../

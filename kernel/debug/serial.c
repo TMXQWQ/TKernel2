@@ -153,6 +153,8 @@ uint8_t get_serial_status(uint16_t port)
 
 #endif
 
+
+
 uint8_t serial_handle(struct writer *writer, char ch)
 {
     write_serial((uintptr_t)(writer->data), ch);

@@ -21,6 +21,24 @@
 #    define KERNEL_LOG 1
 #endif
 
+#define ansi_black   0
+#define ansi_red     1
+#define ansi_green   2
+#define ansi_yellow  3
+#define ansi_blue    4
+#define ansi_magenta 5
+#define ansi_cyan    6
+#define ansi_white   7
+
+#define ansi_normal    0
+#define ansi_bold      1
+#define ansi_underline 4
+
+#define __ansi_tmp_macro1(x) #x
+#define __ansi_tmp_macro2(x) __ansi_tmp_macro1(x)
+#define ansi_color(info, background, frontground, flags) \
+    "\033["__ansi_tmp_macro2(flags) ";3"__ansi_tmp_macro2(frontground) ";4"__ansi_tmp_macro2(background) "m" info "\033[0m"
+
 typedef enum {
     OFLOW_AT_FMTARG,
     OFLOW_AT_FMTSTR,
