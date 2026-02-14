@@ -24,7 +24,7 @@ int init_mod()
                         break;
 #endif
                     default :
-                        printk(ansi_color("[ Module ]", ansi_black, ansi_green, ansi_bold; ansi_underline) " Unsupport platform: %s.",
+                        printk(ansi_V("[ Module ]") " Unsupport platform: %s.",
                                machine == EM_X86_64 ? "x86_64" :
                                machine == EM_RISCV  ? "RISC-V" :
                                                       "Unkown");
@@ -32,7 +32,7 @@ int init_mod()
                 }
                 test       = elf_pie_enter_parse((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
                 char *name = load_mod((mod_enter)(uintptr_t)test)->name;
-                printk(ansi_color("[ Module ]", ansi_black, ansi_green, ansi_bold; ansi_underline) " Load module %s.\n", name);
+                printk(ansi_V("[ Module ]") " Load module %s.\n", name);
             }
     }
     return 0;

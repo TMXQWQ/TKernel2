@@ -39,6 +39,10 @@
 #define ansi_color(info, background, frontground, flags) \
     "\033["__ansi_tmp_macro2(flags) ";3"__ansi_tmp_macro2(frontground) ";4"__ansi_tmp_macro2(background) "m" info "\033[0m"
 
+// clang-format off
+#define ansi_V(info) ansi_color(info, ansi_black, ansi_green, ansi_bold)
+// clang-format on
+
 typedef enum {
     OFLOW_AT_FMTARG,
     OFLOW_AT_FMTSTR,

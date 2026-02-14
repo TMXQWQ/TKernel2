@@ -18,12 +18,12 @@ void executable_entry(void)
 void kernel_entry(void)
 {
     init_serial();
-    printk(ansi_color("[ Kernel ]", ansi_black, ansi_green, ansi_bold; ansi_underline) " Boot By : %s\n",
+    printk(ansi_V("[ Kernel ]") " Boot By : %s\n",
            bootloader == Limine ? "Limine" : "Unkown");
-    printk(ansi_color("[ Kernel ]", ansi_black, ansi_green, ansi_bold; ansi_underline) " Kernel: %s (%s)\n", KERNEL_NAME, KERNEL_VERSION);
-    printk(ansi_color("[ Kernel ]", ansi_black, ansi_green, ansi_bold; ansi_underline) " BUILD_DATE: %s, BUILD_TIME: %s\n", BUILD_DATE,
+    printk(ansi_V("[ Kernel ]") " Kernel: %s (%s)\n", KERNEL_NAME, KERNEL_VERSION);
+    printk(ansi_V("[ Kernel ]") " BUILD_DATE: %s, BUILD_TIME: %s\n", BUILD_DATE,
            BUILD_TIME);
-    printk(ansi_color("[ Kernel ]", ansi_black, ansi_green, ansi_bold; ansi_underline) " COMPILER_NAME: %s\n", COMPILER_NAME);
+    printk(ansi_V("[ Kernel ]") " COMPILER_NAME: %s\n", COMPILER_NAME);
     init_mod();
     for (;;);
 }
