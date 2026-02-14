@@ -40,6 +40,7 @@
     "\033["__ansi_tmp_macro2(flags) ";3"__ansi_tmp_macro2(frontground) ";4"__ansi_tmp_macro2(background) "m" info "\033[0m"
 
 // clang-format off
+// 默认内核输出日志开头的ansi序列
 #define ansi_V(info) ansi_color(info, ansi_black, ansi_green, ansi_bold)
 // clang-format on
 
