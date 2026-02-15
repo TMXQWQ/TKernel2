@@ -11,7 +11,6 @@ endif
 
 C_SOURCES      := $(shell find * -name "*.c")
 tkms      := $(shell find * -name "*.tkm")
-# tkms	:= $(patsubst %/,%,$(wildcard */))
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 DEPS           := $(OBJS:%.o=%.d)
 
@@ -26,7 +25,7 @@ DEPS           := $(OBJS:%.o=%.d)
 
 initrd.img: $(C_SOURCES) $(MODULE_LIST)
 	$(V)
-	$(Q) printf "%s\n" test.tkm test2.tkm | cpio --format=newc -o > $@
+	$(Q) find . -maxdepth 1 -name "*.tkm" | cpio --format=newc -o > $@ 2> /dev/null
 	$(Q) cp $@ ../
 
 clean: initrd.img

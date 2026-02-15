@@ -1,0 +1,6 @@
+menuconfig test2
+    tristate "Test2_Module"
+    default m
+    depends on m
+    help
+        "just a test.XD"

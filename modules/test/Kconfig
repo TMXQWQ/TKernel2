@@ -1,0 +1,8 @@
+menu "Test"
+    config Test
+        tristate "Test_Module"
+        default m
+        depends on m
+        help
+            "just a test.XD"
+endmenu
