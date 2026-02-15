@@ -33,11 +33,13 @@
 #define ansi_normal    0
 #define ansi_bold      1
 #define ansi_underline 4
+#define ansi_shine     5
+#define ansi_delline   9
 
 #define __ansi_tmp_macro1(x) #x
 #define __ansi_tmp_macro2(x) __ansi_tmp_macro1(x)
 #define ansi_color(info, background, frontground, flags) \
-    "\033["__ansi_tmp_macro2(flags) ";3"__ansi_tmp_macro2(frontground) ";4"__ansi_tmp_macro2(background) "m" info "\033[0m"
+    "\e["__ansi_tmp_macro2(flags) ";3"__ansi_tmp_macro2(frontground) ";4"__ansi_tmp_macro2(background) "m" info "\e[0m"
 
 // clang-format off
 // 默认内核输出日志开头的ansi序列
