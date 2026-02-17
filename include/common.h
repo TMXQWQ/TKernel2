@@ -55,6 +55,10 @@ void mmio_write32(uint32_t *addr, uint32_t data);
 /* Write a 64-bit data to the specified memory address */
 void mmio_write64(void *addr, uint64_t data);
 
+inline void    mmio_write8(volatile void *addr, uint8_t val);
+
+inline uint8_t mmio_read8(volatile void *addr);
+
 /* Read a 32-bit data from the specified memory address */
 uint32_t mmio_read32(void *addr);
 

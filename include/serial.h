@@ -23,6 +23,8 @@
 #define SERIAL_REG_MCR  4 // Modem Control Registers
 #define SERIAL_REG_LSR  5 // Line Status Register
 
+#ifdef __x86_64__
+
 /* Serial port I/O */
 #define SERIAL_PORT_1 0x3f8 // Serial port 1 number.
 #define SERIAL_PORT_2 0x2f8 // Serial port 2 number.
@@ -30,6 +32,8 @@
 #define SERIAL_PORT_4 0x2e8 // Serial port 4 number.
 
 #define PORT_TO_COM(port) ((port) == 0x3f8 ? "COM1" : (port) == 0x2f8 ? "COM2" : (port) == 0x3e8 ? "COM3" : (port) == 0x2e8 ? "COM4" : "Unknown")
+
+#endif
 
 #ifndef SERIAL_PARITY
 #    define SERIAL_PARITY 0
@@ -47,12 +51,17 @@
 #    define SERIAL_STOP_BITS 1
 #endif
 
+#ifdef __loongarch64
+/* LoongArch64 QEMU virt 平台串口 MMIO 基址 */
+// #define SERIAL_MMIO_BASE ((volatile void*)0x1fe001e0)
+#endif
+
 void    init_serial(void);                         // Initialize the serial port
-int     serial_received(uint16_t port);            // Check whether the serial port is ready to read
-int     is_transmit_empty(uint16_t port);          // Check whether the serial port is idle
-uint8_t read_serial(uint16_t port);                // Read serial port
-void    write_serial(uint16_t port, uint8_t data); // Write serial port
-uint8_t get_serial_status(uint16_t port);          // Get the status value of the specified serial port
+int     serial_received(uintptr_t port);            // Check whether the serial port is ready to read
+int     is_transmit_empty(uintptr_t port);          // Check whether the serial port is idle
+uint8_t read_serial(uintptr_t port);                // Read serial port
+void    write_serial(uintptr_t port, uint8_t data); // Write serial port
+uint8_t get_serial_status(uintptr_t port);          // Get the status value of the specified serial port
 
 uint8_t serial_handle(struct writer *writer, char ch);
 

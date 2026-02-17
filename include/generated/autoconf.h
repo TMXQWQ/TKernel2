@@ -1,0 +1,18 @@
+/*
+ * Automatically generated file; DO NOT EDIT.
+ * TKernel
+ */
+#define CONFIG_TTY_DEFAULT_DEV "tty0"
+#define CONFIG_MODULES 1
+#define CONFIG_TTY_BUF_SIZE 4096
+#define CONFIG_CPU_MAX_COUNT 0
+#define CONFIG_SERIAL_STOP_BITS 1
+#define CONFIG_SERIAL_BAUD_RATE 9600
+#define CONFIG_CPU_FEATURE_FPU 1
+#define CONFIG_CPU_FEATURE_SSE 1
+#define CONFIG_ARCH "x86_64"
+#define CONFIG_KERNEL_LOG 1
+#define CONFIG_SERIAL_DATA_BITS 8
+#define CONFIG_test2_MODULE 1
+#define CONFIG_CPU_FEATURE_AVX 1
+#define CONFIG_Test_MODULE 1

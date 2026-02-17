@@ -111,29 +111,6 @@ uint64_t get_rflags(void)
     return rflags;
 }
 
-/* Write a 32-bit data to the specified memory address */
-void mmio_write32(uint32_t *addr, uint32_t data)
-{
-    *(volatile uint32_t *)addr = data;
-}
-
-/* Write a 64-bit data to the specified memory address */
-void mmio_write64(void *addr, uint64_t data)
-{
-    *(volatile uint64_t *)addr = data;
-}
-
-/* Read a 32-bit data from the specified memory address */
-uint32_t mmio_read32(void *addr)
-{
-    return *(volatile uint32_t *)addr;
-}
-
-/* Read a 64-bit data from the specified memory address */
-uint64_t mmio_read64(void *addr)
-{
-    return *(volatile uint64_t *)addr;
-}
 
 /* Read msr register */
 uint64_t rdmsr(uint32_t msr)
@@ -178,18 +155,18 @@ uint64_t rdtsc_serialized(void)
 {
     uint32_t lo, hi;
     __asm__ volatile("mfence\n\t"
-                     "rdtsc\n\t"
-                     "lfence"
-                     : "=a"(lo), "=d"(hi)
-                     :
-                     : "memory");
-    return ((uint64_t)hi << 32) | lo;
-}
-
-/* Basic rdtscp reading */
-uint64_t rdtscp(uint32_t *aux)
-{
-    uint32_t lo, hi;
+        "rdtsc\n\t"
+        "lfence"
+        : "=a"(lo), "=d"(hi)
+        :
+        : "memory");
+        return ((uint64_t)hi << 32) | lo;
+    }
+    
+    /* Basic rdtscp reading */
+    uint64_t rdtscp(uint32_t *aux)
+    {
+        uint32_t lo, hi;
     __asm__ volatile("rdtscp" : "=a"(lo), "=d"(hi), "=c"(*aux) : : "memory");
     return ((uint64_t)hi << 32) | lo;
 }
@@ -199,18 +176,18 @@ uint64_t rdtscp_serialized(uint32_t *aux)
 {
     uint32_t lo, hi;
     __asm__ volatile("mfence\n\t"
-                     "rdtscp\n\t"
-                     "lfence"
-                     : "=a"(lo), "=d"(hi), "=c"(*aux)
-                     :
-                     : "memory");
-    return ((uint64_t)hi << 32) | lo;
-}
-
-/* Enable interrupt */
-void enable_intr(void)
-{
-    __asm__ volatile("sti");
+        "rdtscp\n\t"
+        "lfence"
+        : "=a"(lo), "=d"(hi), "=c"(*aux)
+        :
+        : "memory");
+        return ((uint64_t)hi << 32) | lo;
+    }
+    
+    /* Enable interrupt */
+    void enable_intr(void)
+    {
+        __asm__ volatile("sti");
 }
 
 /* Disable interrupts */
@@ -234,5 +211,37 @@ __attribute__((noinline)) void compiler_barrier(void)
 
 #endif
 
+// MMIO
+
+inline void mmio_write8(volatile void *addr, uint8_t val) {
+    *(volatile uint8_t *)addr = val;
+}
+inline uint8_t mmio_read8(volatile void *addr) {
+    return *(volatile uint8_t *)addr;
+}
+
+/* Write a 32-bit data to the specified memory address */
+void mmio_write32(uint32_t *addr, uint32_t data)
+{
+    *(volatile uint32_t *)addr = data;
+}
+
+/* Write a 64-bit data to the specified memory address */
+void mmio_write64(void *addr, uint64_t data)
+{
+    *(volatile uint64_t *)addr = data;
+}
+
+/* Read a 32-bit data from the specified memory address */
+uint32_t mmio_read32(void *addr)
+{
+    return *(volatile uint32_t *)addr;
+}
+
+/* Read a 64-bit data from the specified memory address */
+uint64_t mmio_read64(void *addr)
+{
+    return *(volatile uint64_t *)addr;
+}
 
 

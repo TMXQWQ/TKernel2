@@ -5,7 +5,7 @@ menu "platform config"
     string   "Target arch."
     default "x86_64"
     help
-      "Target arch. Support x86_64, riscv"
+      "Target arch. Support x86_64, loongarch64, riscv (Not yet support)"
 endmenu
 
 menu "Kernel debugging"
