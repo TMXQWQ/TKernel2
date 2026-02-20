@@ -1,6 +1,7 @@
 #include "cpio.h"
 #include "elf_parse.h"
 #include "printk.h"
+#include "stddef.h"
 #include "stdint.h"
 #include "tkm.h"
 #include <elf.h>
@@ -23,16 +24,22 @@ int init_mod()
                     case EM_RISCV :
                         break;
 #endif
+#ifdef __loongarch64
+                    case EM_LOONGARCH :
+                        break;
+#endif
                     default :
-                        printk(ansi_V("[ Module ]") " Unsupport platform: %s.",
+                        printk(ansi_V("[ Module ]") " Unsupport platform: %s.\n",
                                machine == EM_X86_64 ? "x86_64" :
                                machine == EM_RISCV  ? "RISC-V" :
-                                                      "Unkown");
+                               machine == EM_LOONGARCH  ? "loongarch64" :
+                                                      "Unknown");
                         continue;
                 }
                 test       = elf_pie_enter_parse((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
-                char *name = load_mod((mod_enter)(uintptr_t)test)->name;
-                printk(ansi_V("[ Module ]") " Load module %s.\n", name);
+                module_info *mod = load_mod((mod_enter)(uintptr_t)test);
+                printk(ansi_V("[ Module ]") " Load module %p %p.\n", mod->name, mod->init);
+                printk("%d", mod->init(NULL));
             }
     }
     return 0;

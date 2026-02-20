@@ -28,5 +28,5 @@ initrd.img: $(C_SOURCES) $(MODULE_LIST)
 	$(Q) find . -maxdepth 1 -name "*.tkm" | cpio --format=newc -o > $@ 2> /dev/null
 	$(Q) cp $@ ../
 
-clean: initrd.img
+clean:
 	$(V) rm -f initrd.img $(OBJS) $(DEPS) $(tkms)

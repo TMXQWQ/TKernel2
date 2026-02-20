@@ -101,7 +101,7 @@ PWD            := $(shell pwd)
 
 QEMU           := qemu-system-$(CONFIG_ARCH)
 QEMU_SERIAL	:= stdio
-QEMU_BIOS	:=	assets/ovmf-code.fd
+QEMU_BIOS	:=	/usr/share/edk2-ovmf-$(CONFIG_ARCH)/OVMF_CODE.fd
 QEMU_KVM	   := --enable-kvm
 QEMU_SMP	   := 2
 QEMU_FLAGS     := -bios assets/ovmf-code.fd -serial $(QEMU_SERIAL) --bios $(QEMU_BIOS)
@@ -118,10 +118,18 @@ LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
 
 ifeq ($(CONFIG_ARCH), "x86_64")
 LD	:=	ld
+C_FLAGS	+= -mno-red-zone -mcmodel=kernel
 endif
 
-C_FLAGS        := -Wall -Wextra -O0 -g3 -m64 -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -mstackrealign -mno-red-zone -I include -MMD
-LD_FLAGS       := -nostdlib -T assets/linker.ld
+ifneq ($(CONFIG_ARCH), "x86_64")
+LD	:=	ld.lld
+C_FLAGS	+= --target=$(CONFIG_ARCH)-linux-gnu -m64 
+endif
+
+CC="clang"
+
+C_FLAGS        += -Wall -Wextra -O0 -g3 -fno-pie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -mstackrealign -I include -MMD
+LD_FLAGS       += -nostdlib -T assets/linker.ld
 # endif
 
 
@@ -159,7 +167,7 @@ $(IMAGE_NAME).iso: kernel.bin initrd.img
 	$(Q)echo
 	$(Q)printf "\033[1;32m[ ISO   ]\033[0m Packing ISO file...\n"
 	$(Q)cp -a assets/Limine iso
-	$(Q)cp initrd.img iso/EFI/BOOT/
+	$(Q)cp initrd.img iso/EFI/Boot/
 	$(Q)cp $< iso/EFI/Boot
 	$(Q)xorriso -as mkisofs -R -r -J -b Limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
                 -boot-info-table -hfsplus -apm-block-size 2048 -efi-boot-part --efi-boot-image --protective-msdos-label \

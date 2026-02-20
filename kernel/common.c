@@ -211,12 +211,20 @@ __attribute__((noinline)) void compiler_barrier(void)
 
 #endif
 
+#ifdef __loongarch64
+
+void krn_halt(){
+    return;
+}
+
+#endif
+
 // MMIO
 
-inline void mmio_write8(volatile void *addr, uint8_t val) {
+void mmio_write8(volatile void *addr, uint8_t val) {
     *(volatile uint8_t *)addr = val;
 }
-inline uint8_t mmio_read8(volatile void *addr) {
+uint8_t mmio_read8(volatile void *addr) {
     return *(volatile uint8_t *)addr;
 }
 
@@ -243,5 +251,3 @@ uint64_t mmio_read64(void *addr)
 {
     return *(volatile uint64_t *)addr;
 }
-
-

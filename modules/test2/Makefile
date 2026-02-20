@@ -11,12 +11,14 @@ endif
 
 ifeq ($(CONFIG_$(ModuleName)), m)
 
+CC	:=	$(CONFIG_ARCH)-linux-gnu-gcc
+LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
 
 C_SOURCES      := $(shell find * -name "*.c")
-C_FLAGS        := -Wall -Wextra -O0 -g3 -m64 -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -mstackrealign -mno-red-zone -I ../../include -MMD
+C_FLAGS        := -Wall -Wextra -O0 -g3 -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../../include -MMD
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
-LD_FLAGS       := -nostdlib -m elf_x86_64 -e _start
-LD					:= ld
+LD_FLAGS       := -nostdlib -e _start -T ../module_default.ld
+LD					:= ld.lld
 
 
 all: $(ModuleName).tkm
