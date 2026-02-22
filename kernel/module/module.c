@@ -38,8 +38,7 @@ int init_mod()
                 }
                 test       = elf_pie_enter_parse((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
                 module_info *mod = load_mod((mod_enter)(uintptr_t)test);
-                printk(ansi_V("[ Module ]") " Load module %p %p.\n", mod->name, mod->init);
-                printk("%d", mod->init(NULL));
+                printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
             }
     }
     return 0;

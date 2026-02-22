@@ -12,5 +12,5 @@ void limine_enter(void)
     newc_filesystem cpio = cpio_parse((newc_header *)mod->data);
     ncfs                 = cpio;
     kernel_entry();
-    for(;;) krn_halt();
+    for(;;);
 }

@@ -101,10 +101,11 @@ PWD            := $(shell pwd)
 
 QEMU           := qemu-system-$(CONFIG_ARCH)
 QEMU_SERIAL	:= stdio
-QEMU_BIOS	:=	/usr/share/edk2-ovmf-$(CONFIG_ARCH)/OVMF_CODE.fd
+# QEMU_BIOS	:=	/usr/share/edk2-ovmf-$(CONFIG_ARCH)/OVMF_CODE.fd
+QEMU_BIOS	:=	assets/ovmf/$(CONFIG_ARCH).fd
 QEMU_KVM	   := --enable-kvm
 QEMU_SMP	   := 2
-QEMU_FLAGS     := -bios assets/ovmf-code.fd -serial $(QEMU_SERIAL) --bios $(QEMU_BIOS)
+QEMU_FLAGS     := -serial $(QEMU_SERIAL) --bios $(QEMU_BIOS)
 
 OBJDUMP	:=	$(CONFIG_ARCH)-linux-gnu-objdump
 
