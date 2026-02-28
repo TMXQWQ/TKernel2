@@ -9,6 +9,8 @@
 #
 # =====================================================
 
+# Thanks for Uinxed-Kernel	--TMXQwQ
+
 ifneq ($(wildcard .config),)
   include .config
 else ifneq ($(wildcard .config-default),)
@@ -106,6 +108,17 @@ QEMU_BIOS	:=	assets/ovmf/$(CONFIG_ARCH).fd
 QEMU_KVM	   := --enable-kvm
 QEMU_SMP	   := 2
 QEMU_FLAGS     := -serial $(QEMU_SERIAL) --bios $(QEMU_BIOS)
+
+ifeq ($(CONFIG_ARCH), "riscv64")
+
+QEMU_BIOS	:=	
+QEMU_FLAGS     := -serial $(QEMU_SERIAL) \
+								-blockdev node-name=pflash0,driver=file,read-only=on,filename="assets/riscv/RISCV_VIRT_CODE.fd" \
+							    -blockdev node-name=pflash1,driver=file,filename='assets/riscv/RISCV_VIRT_VARS.fd' \
+								-M virt,pflash0=pflash0,pflash1=pflash1 -m 2G
+QEMU_KVM	:=
+
+endif
 
 OBJDUMP	:=	$(CONFIG_ARCH)-linux-gnu-objdump
 

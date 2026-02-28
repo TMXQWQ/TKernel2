@@ -5,7 +5,7 @@ menu "platform config"
     string   "Target arch."
     default "x86_64"
     help
-      "Target arch. Support x86_64, loongarch64, riscv (Not yet support)"
+      "Target arch. Support x86_64, loongarch64 ( not fully supported ), riscv64"
 endmenu
 
 menu "Kernel debugging"
@@ -33,21 +33,21 @@ menu "Processor configuration"
     config CPU_FEATURE_FPU
       depends on ARCH = "x86_64"
       bool "Enable X87FPU (Intel 80X87 Floating-Point Unit)"
-      default y
+      default n
       help
         "Set whether to enable X87FPU/MMX."
 
     config CPU_FEATURE_SSE
       depends on CPU_FEATURE_FPU
       bool "Enable SSE/SSE2 (Streaming SIMD Extensions)"
-      default y
+      default n
       help
         "Set whether to enable SSE/SSE2."
 
     config CPU_FEATURE_AVX
       depends on CPU_FEATURE_SSE
       bool "Enable AVX/AVX2 (Advanced Vector Extensions)"
-      default y
+      default n
       help
         "Set whether to enable AVX/AVX2."
 

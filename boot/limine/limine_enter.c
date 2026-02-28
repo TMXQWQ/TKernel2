@@ -1,4 +1,3 @@
-#include "common.h"
 #include "cpio.h"
 #include "kernel.h"
 #include "limine_module.h"

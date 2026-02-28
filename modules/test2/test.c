@@ -1,13 +1,12 @@
 #include "kernel.h"
+// #include "printk.h"
 #include "tkm.h"
 
-uintptr_t module_init(kernel_info *);
+/* Module Info */
+#define MI_NAME "TEST2"
+/* End Of Module Info */
 
-module_info test_info = {
-    "TEST2",
-    0,
-    module_init,
-};
+uintptr_t module_init(kernel_info *);
 
 uintptr_t module_init(kernel_info *ki)
 {
@@ -16,7 +15,9 @@ uintptr_t module_init(kernel_info *ki)
 }
 module_info *_start(void)
 {
-    test_info.name = "TEST2";
-    test_info.init = module_init;
-    return &test_info;
+    static module_info mi;
+    mi.name = MI_NAME;
+    mi.init = module_init;
+    // printk("test\n");
+    return &mi;
 }

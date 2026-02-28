@@ -19,7 +19,8 @@ void kernel_entry(void)
 {
     init_serial();
     printk(ansi_V("[ Kernel ]") " Boot By : %s\n", bootloader == Limine ? "Limine" : "Unkown");
-    printk(ansi_V("[ Kernel ]") " Kernel: %s (%s)\n", KERNEL_NAME, KERNEL_VERSION);
+    printk(ansi_V("[ Kernel ]") " Kernel: %s", KERNEL_NAME);
+    printk("(%s)\n", KERNEL_VERSION);
     printk(ansi_V("[ Kernel ]") " BUILD_DATE: %s, BUILD_TIME: %s\n", BUILD_DATE, BUILD_TIME);
     printk(ansi_V("[ Kernel ]") " COMPILER_NAME: %s\n", COMPILER_NAME);
     init_mod();

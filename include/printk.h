@@ -34,6 +34,7 @@
 #define ansi_bold      1
 #define ansi_underline 4
 #define ansi_shine     5
+#define ansi_shine_fast     6
 #define ansi_delline   9
 
 #define __ansi_tmp_macro1(x) #x
@@ -43,7 +44,7 @@
 
 // clang-format off
 // 默认内核输出日志开头的ansi序列
-#define ansi_V(info) ansi_color(info, ansi_black, ansi_green, ansi_bold)
+#define ansi_V(info) ansi_color(info, ansi_black, ansi_magenta, ansi_bold)
 // clang-format on
 
 typedef enum {

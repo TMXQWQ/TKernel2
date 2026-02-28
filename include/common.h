@@ -15,7 +15,9 @@
 #include "stddef.h"
 #include "stdint.h"
 
-#define ARCH X86_64
+#define bool char
+#define true 1
+#define false 0
 
 void outb(uint16_t port, uint8_t value);  // Port write (8 bits)
 void outw(uint16_t port, uint16_t value); // Port write (16 bits)
