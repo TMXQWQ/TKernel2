@@ -1,19 +1,19 @@
 #ifndef TKM_H
 #define TKM_H
+#include "elf.h"
 #include "kernel.h"
 #include <stdint.h>
-#include "elf.h"
+
 
 typedef struct {
-        char   *name;
-        // uint8_t nice;                     // 优先级，优先级低的先加载
-        uintptr_t (*init)(kernel_info *); //初始化模块
+        char *name;
+        uintptr_t (*init)(); //初始化模块
 } module_info;
 
-typedef module_info *(*mod_enter)();
+typedef module_info *(*mod_enter)(kernel_info *);
 
 int init_mod();
 
-module_info *load_mod(Elf64_Ehdr*);
+module_info *load_mod(Elf64_Ehdr *);
 
 #endif

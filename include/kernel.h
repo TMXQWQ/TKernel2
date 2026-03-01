@@ -12,6 +12,8 @@
 #ifndef INCLUDE_KERNEL_H_
 #define INCLUDE_KERNEL_H_
 
+#include <stdint.h>
+#include "limine.h"
 #define BUILD_DATE     __DATE__  // Compilation Date
 #define BUILD_TIME     __TIME__  // Compile time
 #define KERNEL_NAME    "TKernel" // Kernel name
@@ -47,17 +49,40 @@ extern volatile struct limine_kernel_address_request kernel_address_request;
 extern volatile struct limine_entry_point_request    entry_point_request;
 extern volatile struct limine_module_request         module_request;
 
-extern enum BL {
-    Unkown = 0,
-    Limine = 1,
-    Linux  = 2, // unsupport now
-    EFI    = 3, // unsupport now
-} bootloader;
+typedef struct {
+    char *name;
+    uintptr_t offset;
+} ksym;
+
+extern ksym _symbol_table_start[];
+extern ksym _symbol_table_end[];
+
+// extern enum BL {
+//     Unkown = 0,
+//     Limine = 1,
+//     Linux  = 2, // unsupport now
+//     EFI    = 3, // unsupport now
+// } bootloader;
+
+typedef struct BootInfo {
+        enum BL {
+            Unkown = 0,
+            Limine = 1,
+            Linux  = 2, // unsupport now
+            EFI    = 3, // unsupport now
+        } bootloader;
+        uintptr_t kernel_base_addr;
+        ksym *symbol_table_start;
+        ksym *symbol_table_end;
+} bootinfo;
+
+extern bootinfo kernel_boot_info;
 
 typedef struct {
-        const char        *kernel_name;
-        const char        *version;
-        typeof(bootloader) bl;
+        const char *kernel_name;
+        const char *version;
+        bootinfo   bootinfo;
+
 } kernel_info;
 
 extern kernel_info kinfo;

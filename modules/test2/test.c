@@ -6,15 +6,13 @@
 #define MI_NAME "TEST2"
 /* End Of Module Info */
 
-uintptr_t module_init(kernel_info *);
-
-uintptr_t module_init(kernel_info *ki)
+uintptr_t module_init()
 {
-    (void)ki;
     return 1;
 }
-module_info *_start(void)
+module_info *_start(kernel_info *ki)
 {
+    (void)ki;
     static module_info mi;
     mi.name = MI_NAME;
     mi.init = module_init;

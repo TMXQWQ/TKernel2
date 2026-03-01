@@ -171,7 +171,10 @@ info:
 	$(Q)printf "Based on the GPL-3.0 open source license.\n"
 	$(Q)echo
 
-kernel.bin: $(OBJS) $(LIBS)
+kernel.bin.1: $(OBJS) $(LIBS)
+	$(V)$(LD) $(LD_FLAGS) -o $@ $^ -r
+
+kernel.bin: kernel.bin.1 ksym.o
 	$(V)$(LD) $(LD_FLAGS) -o $@ $^
 
 kerneldump.log: kernel.bin

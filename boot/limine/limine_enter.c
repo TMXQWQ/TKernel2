@@ -4,8 +4,12 @@
 
 void limine_enter(void)
 {
-    bootloader = Limine;
-    kinfo.bl   = Limine;
+    // bootloader = Limine;
+    // kinfo.bl   = Limine;
+    kinfo.bootinfo.bootloader = Limine;
+    kinfo.bootinfo.kernel_base_addr = kernel_address_request.response->virtual_base;
+    kinfo.bootinfo.symbol_table_start = (ksym*)_symbol_table_start;
+    kinfo.bootinfo.symbol_table_end = (ksym*)_symbol_table_end;
     lmodule_init();
     lmodule_t      *mod  = get_lmodule("initrd");
     newc_filesystem cpio = cpio_parse((newc_header *)mod->data);
