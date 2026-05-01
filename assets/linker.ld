@@ -58,11 +58,9 @@ SECTIONS
     } :data
     
     . = ALIGN(CONSTANT(MAXPAGESIZE));
-    _symbol_table_start = .;
     .st : {
         *(.st)
     } :data
-    _symbol_table_end = .;
 
     /DISCARD/ : {
         *(.eh_frame*)

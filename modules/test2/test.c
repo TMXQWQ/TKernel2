@@ -7,9 +7,7 @@
 /* End Of Module Info */
 
 uintptr_t module_init()
-{
-    return 1;
-}
+{ return 1; }
 module_info *_start(kernel_info *ki)
 {
     (void)ki;

@@ -17,4 +17,6 @@ Elf64_Shdr *get_target_section(Elf64_Shdr *rel_hdr, Elf64_Shdr *shdr);
 
 enter elf_pie_enter_parse(Elf64_Ehdr *base);
 
+void elf_relocate_module(void *base);
+
 #endif

@@ -2,6 +2,7 @@
 #include "printk.h"
 #include "serial.h"
 #include "tkm.h"
+#include <stdint.h>
 
 kernel_info kinfo;
 
@@ -11,9 +12,7 @@ kernel_info kinfo = {
 };
 
 void executable_entry(void)
-{
-    for (;;);
-}
+{ for (;;); }
 
 void kernel_entry(void)
 {
@@ -28,10 +27,10 @@ void kernel_entry(void)
     ksym     *kte = kinfo.bootinfo.symbol_table_end;
     uintptr_t krs = kinfo.bootinfo.kernel_base_addr;
     ksym     *p   = kts;
-    printk("%p %p\n", kts, kte);
-    for (; p != kte; p++) printk("%s %p\n", p->name, p->offset+ krs);
+    printk("%p %p %p\n", krs, kts, kte);
+    for (; (uintptr_t)p < (uintptr_t)kte; p++) printk("%s %p\n", p->name, (uintptr_t)(p->offset) + (uintptr_t)krs);
     //
-    // init_mod();
+    init_mod();
     for (int i = 0; i <= 7; i++) { printk("\033[1;13;4%dm  \033[0m", i); }
     printk("\n");
     for (;;);

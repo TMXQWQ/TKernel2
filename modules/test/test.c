@@ -6,7 +6,11 @@
 #include <string.h>
 
 /* Module Info */
-#define MI_NAME "TEST"
+#define Mod_Name               TEST
+#define __macro_to_str_impl(m) #m
+#define __macro_to_str(m)      __macro_to_str_impl(m)
+
+#define MI_NAME __macro_to_str(Mod_Name)
 /* End Of Module Info */
 
 int strcmp(const char *str1, const char *str2)
@@ -27,21 +31,21 @@ int strcmp(const char *str1, const char *str2)
 #endif
 }
 
-typeof(printk)(*_printk);
-void printk(const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    _printk(format, args);
-    va_end(args);
-}
+// typeof(printk)(*_printk);
+// void printk(const char *format, ...)
+// {
+//     va_list args;
+//     va_start(args, format);
+//     _printk(format, args);
+//     va_end(args);
+// }
 
 kernel_info *_kinfo;
 
 uintptr_t module_init(void)
 {
-    // printk("test\n");
-    return (uintptr_t)&_printk;
+    printk("test\n");
+    return 0;
 }
 module_info *_start(kernel_info *ki)
 {
@@ -49,13 +53,12 @@ module_info *_start(kernel_info *ki)
     _kinfo  = ki;
     mi.name = MI_NAME;
     mi.init = module_init;
-    // 重定位
-    ksym *kts = _kinfo->bootinfo.symbol_table_start;
-    ksym *kte = _kinfo->bootinfo.symbol_table_end;
-    uintptr_t krs = _kinfo->bootinfo.kernel_base_addr;
-    ksym *p = kts;
-    for(;p!=kte;p++)
-        if(strcmp(p->name,"printk"))
-            _printk = (typeof(_printk))(krs + p->offset);
+    // // 重定位
+    // ksym     *kts = _kinfo->bootinfo.symbol_table_start;
+    // ksym     *kte = _kinfo->bootinfo.symbol_table_end;
+    // uintptr_t krs = _kinfo->bootinfo.kernel_base_addr;
+    // ksym     *p   = kts;
+    // for (; (uintptr_t)p < (uintptr_t)kte; p++)
+    //     if (!strcmp(p->name, "printk")) { _printk = (typeof(_printk))((uintptr_t)(p->offset) + (uintptr_t)krs); }
     return &mi;
 }

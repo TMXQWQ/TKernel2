@@ -22,7 +22,7 @@ Elf64_Shdr* get_target_section(Elf64_Shdr *rel_hdr, Elf64_Shdr *shdr) {
 
 enter elf_pie_enter_parse(Elf64_Ehdr *base)
 {
-    return (enter)(((uintptr_t)(base->e_entry) + (uintptr_t)elf_get_section(base, ".text")));
+    return (enter)((uintptr_t)base + base->e_entry);
 }
 
 void *elf_get_section(Elf64_Ehdr *base, char *name)

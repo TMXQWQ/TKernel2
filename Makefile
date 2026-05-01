@@ -98,7 +98,7 @@ S_SOURCES      := $(shell find * -name "*.s")
 HEADERS        := $(shell find * -name "*.h")
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 DEPS           := $(OBJS:%.o=%.d)
-LIBS           := $(wildcard libs/lib*.a)
+LIBS           := $(wildcard libs/lib*.a) libhal-$(CONFIG_ARCH).a
 PWD            := $(shell pwd)
 
 QEMU           := qemu-system-$(CONFIG_ARCH)
@@ -108,6 +108,8 @@ QEMU_BIOS	:=	assets/ovmf/$(CONFIG_ARCH).fd
 QEMU_KVM	   := --enable-kvm
 QEMU_SMP	   := 2
 QEMU_FLAGS     := -serial $(QEMU_SERIAL) --bios $(QEMU_BIOS)
+TOOLCHAIN_PREFIX	:=	
+
 
 ifeq ($(CONFIG_ARCH), "riscv64")
 
@@ -117,6 +119,7 @@ QEMU_FLAGS     := -serial $(QEMU_SERIAL) \
 							    -blockdev node-name=pflash1,driver=file,filename='assets/riscv/RISCV_VIRT_VARS.fd' \
 								-M virt,pflash0=pflash0,pflash1=pflash1 -m 2G
 QEMU_KVM	:=
+TOOLCHAIN_PREFIX	:=	riscv64-linux-gnu-
 
 endif
 
@@ -171,8 +174,11 @@ info:
 	$(Q)printf "Based on the GPL-3.0 open source license.\n"
 	$(Q)echo
 
-kernel.bin.1: $(OBJS) $(LIBS)
-	$(V)$(LD) $(LD_FLAGS) -o $@ $^ -r
+ksym.o: kernel.bin.1
+	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) scripts/gen_ksym.sh $^ $@
+
+kernel.bin.1: $(OBJS) $(LIBS) libhal-$(CONFIG_ARCH).a
+	$(V)$(LD) $(LD_FLAGS) -r -o $@ $^
 
 kernel.bin: kernel.bin.1 ksym.o
 	$(V)$(LD) $(LD_FLAGS) -o $@ $^
@@ -254,7 +260,8 @@ run_hdd_uefi: $(IMAGE_NAME).hdd
 
 clean:
 	$(Q)make clean $(MAKE_FLAGS) -C modules
-	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso initrd.img
+	$(Q)make clean $(MAKE_FLAGS) -C hal
+	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso initrd.img libhal-sym.o  libhal-*.a
 	$(Q)printf "\033[1;32m[ Done  ]\033[0m Clean completed.\n\n"
 
 gen.clangd:
@@ -284,3 +291,6 @@ initrd.img: $(MOD_SOURCES)
 remake: clean TKernel-test.iso
 
 remake_run: remake run
+
+libhal-$(CONFIG_ARCH).a:
+	make all -C hal

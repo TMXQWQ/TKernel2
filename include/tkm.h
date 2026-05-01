@@ -4,7 +4,6 @@
 #include "kernel.h"
 #include <stdint.h>
 
-
 typedef struct {
         char *name;
         uintptr_t (*init)(); //初始化模块
