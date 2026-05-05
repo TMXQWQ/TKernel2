@@ -49,8 +49,11 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
     }
     elf_relocate_module(base_addr);
     mod_enter test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
-    module_info *mod = test(&kinfo);
-    printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
-    printk(ansi_V("[ Module ]") "Module returned : %d\n", mod->init());
-    return mod;
+    printk(ansi_V("[ Module ]") "test _start:%p\t%ld\n", test, *(uint64_t*)test);
+    // module_info *mod = test(&kinfo);
+    // printk(ansi_V("[ Module ]") "_start returned %p.\n", mod);
+    // printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
+    // printk(ansi_V("[ Module ]") "Module returned : %d\n", mod->init());
+    // return mod;
+    return 0;
 }

@@ -67,3 +67,4 @@ make.log
 *.bak
 kerneldump.log
 qemu.log
+kernel.bin.1

@@ -261,7 +261,7 @@ run_hdd_uefi: $(IMAGE_NAME).hdd
 clean:
 	$(Q)make clean $(MAKE_FLAGS) -C modules
 	$(Q)make clean $(MAKE_FLAGS) -C hal
-	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso initrd.img libhal-sym.o  libhal-*.a
+	$(Q)$(RM) $(OBJS) $(DEPS) kernel.bin TKernel-test.iso initrd.img libhal-sym.o  libhal-*.a *.o *.1
 	$(Q)printf "\033[1;32m[ Done  ]\033[0m Clean completed.\n\n"
 
 gen.clangd:

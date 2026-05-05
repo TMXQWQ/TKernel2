@@ -20,9 +20,56 @@ Elf64_Shdr* get_target_section(Elf64_Shdr *rel_hdr, Elf64_Shdr *shdr) {
     return &shdr[rel_hdr->sh_info];
 }
 
+uint64_t get_symbol_address(void *base, const char *name) {
+    Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
+    Elf64_Shdr *shdr = (Elf64_Shdr *)(base + ehdr->e_shoff);
+    int shnum = ehdr->e_shnum;
+
+    Elf64_Shdr *symtab_hdr = NULL, *strtab_hdr = NULL;
+    Elf64_Shdr *sec_hdrs = NULL;
+    char *strtab = NULL;
+
+    // 先收集所有节头
+    sec_hdrs = shdr;
+
+    for (int i = 0; i < shnum; i++) {
+        if (shdr[i].sh_type == SHT_SYMTAB) {
+            symtab_hdr = &shdr[i];
+            strtab_hdr = &shdr[symtab_hdr->sh_link];
+            strtab = (char *)base + strtab_hdr->sh_offset;
+            break;
+        }
+    }
+    if (!symtab_hdr) return 0;
+
+    Elf64_Sym *sym = (Elf64_Sym *)(base + symtab_hdr->sh_offset);
+    int symcount = symtab_hdr->sh_size / sizeof(Elf64_Sym);
+
+    for (int i = 0; i < symcount; i++) {
+        const char *sym_name = strtab + sym[i].st_name;
+        if (strcmp(sym_name, name) == 0) {
+            if (ehdr->e_type == ET_REL) {
+                // 相对节偏移，需要加上节的内存基址
+                uint16_t sec_idx = sym[i].st_shndx;
+                if (sec_idx < SHN_LORESERVE && sec_idx < shnum) {
+                    uint64_t sec_base = (uint64_t)base + shdr[sec_idx].sh_addr;
+                    return sec_base + sym[i].st_value;
+                } else {
+                    return 0; // 特殊索引（如 ABS, COMMON）需单独处理
+                }
+            } else {
+                // ET_EXEC 或 ET_DYN：st_value 已经是偏移或地址
+                return (uint64_t)base + sym[i].st_value;
+            }
+        }
+    }
+    return 0;
+}
+
 enter elf_pie_enter_parse(Elf64_Ehdr *base)
 {
-    return (enter)((uintptr_t)base + base->e_entry);
+    // return (enter)(((uintptr_t)(base->e_entry) + (uintptr_t)elf_get_section(base, ".text")));
+    return (enter)(uintptr_t)get_symbol_address(base,"start");
 }
 
 void *elf_get_section(Elf64_Ehdr *base, char *name)

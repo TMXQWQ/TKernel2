@@ -9,18 +9,19 @@ else
   Q=@
 endif
 
-ifeq ($(CONFIG_$(ModuleName)), m)
 
 
 CC	:=	$(CONFIG_ARCH)-linux-gnu-gcc
 LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
 
 C_SOURCES      := $(shell find * -name "*.c")
-C_FLAGS        := -Wall -Wextra -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../../include -MMD
+C_FLAGS        = -Wall -fno-pie -Wextra -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../../include -MMD -mcmodel=large
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 LD_FLAGS       := -nostdlib -e _start -T ../module_default.ld
 LD					:= ld.lld
 DEPS           := $(OBJS:%.o=%.d)
+
+ifeq ($(CONFIG_$(ModuleName)), m)
 
 all: test.tkm
 
@@ -37,7 +38,7 @@ CC	:=	$(CONFIG_ARCH)-linux-gnu-gcc
 LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
 
 C_SOURCES      := $(shell find * -name "*.c")
-C_FLAGS        := -Wall -Wextra -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../../include -MMD
+C_FLAGS        = -Wall -fno-pie -Wextra -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../../include -MMD
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 LD_FLAGS       := -nostdlib -e _start -T ../module_default.ld
 LD					:= ld.lld
