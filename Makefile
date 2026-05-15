@@ -136,6 +136,7 @@ LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
 ifeq ($(CONFIG_ARCH), "x86_64")
 LD	:=	ld
 C_FLAGS	+= -mno-red-zone -mcmodel=kernel
+OBJDUMP = objdump
 endif
 
 ifneq ($(CONFIG_ARCH), "x86_64")

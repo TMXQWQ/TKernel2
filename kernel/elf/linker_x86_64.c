@@ -24,15 +24,24 @@ void elf_relocate_module(void *base)
 
         Elf64_Rela *rela  = (Elf64_Rela *)((char *)base + shdr[i].sh_offset);
         int         count = shdr[i].sh_size / shdr[i].sh_entsize;
+        // 获取该重定位节所对应的目标节索引
+        uint32_t target_sec_idx = shdr[i].sh_info;
+        if (target_sec_idx >= ehdr->e_shnum) {
+            // printk("[RELOC] Invalid target section index %d\n", target_sec_idx);
+            continue;
+        }
 
-        printk("[RELOC] section[%d]: count=%d, symtab at %p, strtab at %p\n", i, count, symtab, strtab);
+        // 目标节的运行时基址
+        uint64_t target_sec_base = (uint64_t)base + shdr[target_sec_idx].sh_offset;
+        // printk("[RELOC] section[%d]: count=%d, symtab at %p, strtab at %p, section base=%p\n", i, count, symtab, strtab, target_sec_base);
 
         for (int j = 0; j < count; j++) {
             uint32_t type    = ELF64_R_TYPE(rela[j].r_info);
             uint32_t sym_idx = ELF64_R_SYM(rela[j].r_info);
             int64_t  addend  = rela[j].r_addend;
 
-            uintptr_t  *loc      = (uintptr_t *)((char *)base + rela[j].r_offset);
+            uintptr_t *loc = (uintptr_t *)((uintptr_t)target_sec_base + rela[j].r_offset);
+            // printk("target_sec_base:%p\toffset:%p\n", target_sec_base, rela[j].r_offset);
             uintptr_t   sym_addr = 0;
             const char *sym_name = "?";
 
@@ -41,22 +50,23 @@ void elf_relocate_module(void *base)
                 sym_name       = strtab + sym->st_name;
 
                 if (sym->st_shndx != SHN_UNDEF) {
-                    sym_addr = (uintptr_t)base + sym->st_value;
+                    // sym_addr = (uintptr_t)base + sym->st_value;
+                    uint64_t sec_base = (uint64_t)base + shdr[sym->st_shndx].sh_offset;
+                    sym_addr          = sec_base + sym->st_value;
                 } else {
                     const char *name = strtab + sym->st_name;
-                    printk("[RELOC] looking for '%s'\n", name);
+                    // printk("[RELOC] looking for '%s'\n", name);
                     for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++) {
-                        printk("   compare with '%s'\n", p->name);
+                        // printk("   compare with '%s'\n", p->name);
                         if (strcmp(p->name, name) == 0) {
                             sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
-                            printk("[RELOC] found %s at %p\n", name, (void *)sym_addr);
+                            // printk("[RELOC] found %s at %p\n", name, (void *)sym_addr);
                             break;
                         }
                     }
                     if (!sym_addr) { printk("[RELOC] FAILED to find '%s'\n", name); }
                 }
             }
-
             uintptr_t value = 0;
             switch (type) {
                 case R_X86_64_RELATIVE :
@@ -85,7 +95,6 @@ void elf_relocate_module(void *base)
                     printk("[RELOC] Unsupported type %d at %p (sym=%s)\n", type, loc, sym_name);
                     break;
             }
-
             printk("[RELOC] idx=%d type=%d sym=%s loc=%p *loc=%p addend=%ld -> value=%p\n", j, type, sym_name, loc, (void *)*((uintptr_t *)loc),
                    addend, (void *)value);
         }

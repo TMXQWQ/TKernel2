@@ -3,6 +3,7 @@
 #include "stdint.h"
 #include "string.h"
 #include <elf.h>
+#include "printk.h"
 
 Elf64_Shdr* get_section_headers(Elf64_Ehdr *base) {
     return (Elf64_Shdr *)((char *)base + base->e_shoff);
@@ -25,17 +26,13 @@ uint64_t get_symbol_address(void *base, const char *name) {
     Elf64_Shdr *shdr = (Elf64_Shdr *)(base + ehdr->e_shoff);
     int shnum = ehdr->e_shnum;
 
-    Elf64_Shdr *symtab_hdr = NULL, *strtab_hdr = NULL;
-    Elf64_Shdr *sec_hdrs = NULL;
+    // 查找符号表
+    Elf64_Shdr *symtab_hdr = NULL;
     char *strtab = NULL;
-
-    // 先收集所有节头
-    sec_hdrs = shdr;
-
     for (int i = 0; i < shnum; i++) {
         if (shdr[i].sh_type == SHT_SYMTAB) {
             symtab_hdr = &shdr[i];
-            strtab_hdr = &shdr[symtab_hdr->sh_link];
+            Elf64_Shdr *strtab_hdr = &shdr[symtab_hdr->sh_link];
             strtab = (char *)base + strtab_hdr->sh_offset;
             break;
         }
@@ -46,20 +43,22 @@ uint64_t get_symbol_address(void *base, const char *name) {
     int symcount = symtab_hdr->sh_size / sizeof(Elf64_Sym);
 
     for (int i = 0; i < symcount; i++) {
-        const char *sym_name = strtab + sym[i].st_name;
-        if (strcmp(sym_name, name) == 0) {
-            if (ehdr->e_type == ET_REL) {
-                // 相对节偏移，需要加上节的内存基址
-                uint16_t sec_idx = sym[i].st_shndx;
-                if (sec_idx < SHN_LORESERVE && sec_idx < shnum) {
-                    uint64_t sec_base = (uint64_t)base + shdr[sec_idx].sh_addr;
-                    return sec_base + sym[i].st_value;
-                } else {
-                    return 0; // 特殊索引（如 ABS, COMMON）需单独处理
-                }
+        if (strcmp(strtab + sym[i].st_name, name) == 0) {
+            uint16_t shndx = sym[i].st_shndx;
+            if (shndx != SHN_UNDEF && shndx < SHN_LORESERVE && shndx < shnum) {
+                // 使用 sh_offset 计算节的运行时基址，而不是依赖 sh_addr
+                uint64_t sec_base = (uint64_t)base + shdr[shndx].sh_offset;
+                uint64_t addr = sec_base + sym[i].st_value;
+                printk("Symbol %s: shndx=%d, sh_offset=%lx, st_value=%lx, base=%lx, addr=%lx\n",
+                       name, shndx, shdr[shndx].sh_offset, sym[i].st_value, base, addr);
+                return sec_base + sym[i].st_value;
             } else {
-                // ET_EXEC 或 ET_DYN：st_value 已经是偏移或地址
-                return (uint64_t)base + sym[i].st_value;
+                // 处理 ABS 等特殊节
+                uint64_t sec_base = (uint64_t)base + shdr[shndx].sh_offset; // 使用 sh_offset
+                uint64_t addr = sec_base + sym[i].st_value;
+                printk("Symbol %s: shndx=%d, sh_offset=%lx, st_value=%lx, base=%lx, addr=%lx\n",
+                       name, shndx, shdr[shndx].sh_offset, sym[i].st_value, base, addr);
+                return sym[i].st_value;
             }
         }
     }
@@ -69,7 +68,7 @@ uint64_t get_symbol_address(void *base, const char *name) {
 enter elf_pie_enter_parse(Elf64_Ehdr *base)
 {
     // return (enter)(((uintptr_t)(base->e_entry) + (uintptr_t)elf_get_section(base, ".text")));
-    return (enter)(uintptr_t)get_symbol_address(base,"start");
+    return (enter)(uintptr_t)get_symbol_address(base,"_start");
 }
 
 void *elf_get_section(Elf64_Ehdr *base, char *name)

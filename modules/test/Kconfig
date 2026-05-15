@@ -1,5 +1,5 @@
-menu "Test"
-    config Test
+menu "test"
+    config test
         tristate "Test_Module"
         default m
         depends on m

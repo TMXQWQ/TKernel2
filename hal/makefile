@@ -12,7 +12,7 @@ endif
 CC	:=	$(CONFIG_ARCH)-linux-gnu-gcc
 LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
 
-C_SOURCES      := $(shell find arch/$(CONFIG_ARCH) -name "*.c") $(shell find generic -name "*.c")
+C_SOURCES      := $(shell find arch/$(CONFIG_ARCH) -name "*.c")
 C_FLAGS        := -Wall -Wextra -fpie -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../include -MMD
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 LD_FLAGS       := -nostdlib -r

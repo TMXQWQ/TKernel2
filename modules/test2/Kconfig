@@ -1,6 +1,8 @@
-menuconfig test2
-    tristate "Test2_Module"
-    default m
-    depends on m
-    help
-        "just a test.XD"
+menu "test2"
+    config test2
+        tristate "Test_Module2"
+        default m
+        depends on m
+        help
+            "just a test XD."
+endmenu

@@ -1,6 +1,6 @@
 -include ../../.config
 
-ModuleName  := Test
+ModuleName  := test
 ifeq ($(VERBOSE), 1)
   V=
   Q=
@@ -23,40 +23,16 @@ DEPS           := $(OBJS:%.o=%.d)
 
 ifeq ($(CONFIG_$(ModuleName)), m)
 
-all: test.tkm
+all: $(ModuleName).tkm
 
 %.o: %.c
 	$(V)$(CC) $(C_FLAGS) -c -o $@ $<
 
-test.tkm:	$(OBJS)
+$(ModuleName).tkm:	$(OBJS)
 	$(V)$(LD) $(LD_FLAGS) -r -o $@ $^
 	$(Q) cp $@ ../
 
-else ifneq ($(CONFIG_$(ModuleName)), y)
-
-CC	:=	$(CONFIG_ARCH)-linux-gnu-gcc
-LD	:=	$(CONFIG_ARCH)-linux-gnu-ld
-
-C_SOURCES      := $(shell find * -name "*.c")
-C_FLAGS        = -Wall -fno-pie -Wextra -ffreestanding -fno-optimize-sibling-calls -fno-stack-protector -fno-omit-frame-pointer -I ../../include -MMD
-OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
-LD_FLAGS       := -nostdlib -e _start -T ../module_default.ld
-LD					:= ld.lld
-
-
-all: test.tkm
-
-%.o: %.c
-	$(V)$(CC) $(C_FLAGS) -c -o $@ $<
-
-test.tkm:	$(OBJS)
-	$(V)$(LD) $(LD_FLAGS) -r -o $@ $^
-	$(Q) cp $@ ../
-
-else ifeq ($(CONFIG_$(ModuleName)), m)
-
+else 
 all:
-	$(Q)printf "\033[1;32m[ INFO  ]\033[0m CONFIG_$(ModuleName)!=m.\n";
-	$(Q)printf "\033[1;32m[ INFO  ]\033[0m Skipped Module $(ModuleName).\n";
 
 endif

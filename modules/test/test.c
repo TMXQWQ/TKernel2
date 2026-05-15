@@ -3,7 +3,6 @@
 #include "tkm.h"
 #include <elf.h>
 #include <stdint.h>
-#include <string.h>
 
 /* Module Info */
 #define Mod_Name               TEST
@@ -22,17 +21,9 @@ uintptr_t module_init(void)
 }
 module_info *_start(kernel_info *ki)
 {
-    // static module_info mi;
-    // _kinfo  = ki;
-    // mi.name = MI_NAME;
-    // mi.init = module_init;
-    // // 重定位
-    // ksym     *kts = _kinfo->bootinfo.symbol_table_start;
-    // ksym     *kte = _kinfo->bootinfo.symbol_table_end;
-    // uintptr_t krs = _kinfo->bootinfo.kernel_base_addr;
-    // ksym     *p   = kts;
-    // for (; (uintptr_t)p < (uintptr_t)kte; p++)
-    //     if (!strcmp(p->name, "printk")) { _printk = (typeof(_printk))((uintptr_t)(p->offset) + (uintptr_t)krs); }
-    // return &mi;
-    return (module_info*)(uintptr_t)printk;
+    static module_info mi;
+    _kinfo  = ki;
+    mi.name = MI_NAME;
+    mi.init = module_init;
+    return (module_info*)&mi;
 }
