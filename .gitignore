@@ -69,3 +69,5 @@ kerneldump.log
 qemu.log
 kernel.bin.1
 modules/module_list.txt
+
+libhal*
