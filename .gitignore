@@ -71,3 +71,7 @@ kernel.bin.1
 modules/module_list.txt
 
 libhal*
+
+modules/*
+!modules/test
+!modules/test2
