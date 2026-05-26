@@ -1,0 +1,4 @@
+[submodule "modules/LoT"]
+	path = modules/LoT
+	url = git@github.com:TMXQWQ/LoT.git
+	ignore = all
