@@ -72,6 +72,6 @@ modules/module_list.txt
 
 libhal*
 
-modules/*
+modules/LoT
 !modules/test
 !modules/test2
