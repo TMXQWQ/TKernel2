@@ -6,11 +6,12 @@
 
 void elf_relocate_module(void *base)
 {
+    plogk_info_stack[++plogk_info_ptr] = "RELOC";
     if (!base) return;
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
 
     Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base + ehdr->e_shoff);
-    printk("[RELOC] base=%p, shdr=%p, shnum=%d\n", base, shdr, ehdr->e_shnum);
+    // printk("[RELOC] base=%p, shdr=%p, shnum=%d\n", base, shdr, ehdr->e_shnum);
 
     for (int i = 0; i < ehdr->e_shnum; i++) {
         if (shdr[i].sh_type != SHT_RELA) continue;
@@ -64,7 +65,7 @@ void elf_relocate_module(void *base)
                             break;
                         }
                     }
-                    if (!sym_addr) { printk("[RELOC] FAILED to find '%s'\n", name); }
+                    if (!sym_addr) { plogk("FAILED to find '%s'\n", name); }
                 }
             }
             uintptr_t value = 0;
@@ -92,11 +93,12 @@ void elf_relocate_module(void *base)
                     break;
                 // 可继续添加其它类型...
                 default :
-                    printk("[RELOC] Unsupported type %d at %p (sym=%s)\n", type, loc, sym_name);
+                    plogk("Unsupported type %d at %p (sym=%s)\n", type, loc, sym_name);
                     break;
             }
-            printk("[RELOC] idx=%d type=%d sym=%s loc=%p *loc=%p addend=%ld -> value=%p\n", j, type, sym_name, loc, (void *)*((uintptr_t *)loc),
-                   addend, (void *)value);
+            // printk("[RELOC] idx=%d type=%d sym=%s loc=%p *loc=%p addend=%ld -> value=%p\n", j, type, sym_name, loc, (void *)*((uintptr_t *)loc),
+            //    addend, (void *)value);
         }
     }
+    plogk_info_ptr--;
 }

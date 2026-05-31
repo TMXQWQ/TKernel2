@@ -18,7 +18,9 @@
 
 #define BUF_SIZE 2048 // least 2 bytes (1 byte is for '\0')
 
-writer stdio;
+writer  stdio;
+char   *plogk_info_stack[32] = {"INFO"};
+uint8_t plogk_info_ptr       = 0;
 
 /* Kernel print string */
 void printk(const char *format, ...)
@@ -35,6 +37,16 @@ void plogk(const char *format, ...)
 #if KERNEL_LOG
     va_list args;
     va_start(args, format);
+    // printk(ansi_V("[ INFO ] "));
+    printk("%s", "\e["
+                 "1"
+                 ";3"
+                 "5"
+                 ";4"
+                 "0"
+                 "m");
+    printk("[ %s ] ", plogk_info_stack[plogk_info_ptr]);
+    printk("\e[0m");
     vwprintf(&stdio, format, args);
     va_end(args);
 #else
@@ -57,8 +69,8 @@ int sprintf(char *str, const char *fmt, ...)
     int             c                 = 0;
     unsafe_buf_data unsafe_buf_data   = {.buf = str, .idx = 0};
     writer          unsafe_buf_writer = {
-                 .data    = &unsafe_buf_data,
-                 .handler = unsafe_buf_write,
+        .data    = &unsafe_buf_data,
+        .handler = unsafe_buf_write,
     };
     va_list arg;
     va_start(arg, fmt);
@@ -76,8 +88,8 @@ int vsprintf(char *str, const char *fmt, va_list args)
     int             c                 = 0;
     unsafe_buf_data unsafe_buf_data   = {.buf = str, .idx = 0};
     writer          unsafe_buf_writer = {
-                 .data    = &unsafe_buf_data,
-                 .handler = unsafe_buf_write,
+        .data    = &unsafe_buf_data,
+        .handler = unsafe_buf_write,
     };
     c = (int)vwprintf(&unsafe_buf_writer, fmt, args);
     unsafe_buf_writer.handler(&unsafe_buf_writer, '\0');

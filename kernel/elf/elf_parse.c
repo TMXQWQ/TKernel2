@@ -49,14 +49,14 @@ uint64_t get_symbol_address(void *base, const char *name) {
                 // 使用 sh_offset 计算节的运行时基址，而不是依赖 sh_addr
                 uint64_t sec_base = (uint64_t)base + shdr[shndx].sh_offset;
                 uint64_t addr = sec_base + sym[i].st_value;
-                printk("Symbol %s: shndx=%d, sh_offset=%lx, st_value=%lx, base=%lx, addr=%lx\n",
+                plogk("Symbol %s: shndx=%d, sh_offset=%lx, st_value=%lx, base=%lx, addr=%lx\n",
                        name, shndx, shdr[shndx].sh_offset, sym[i].st_value, base, addr);
                 return sec_base + sym[i].st_value;
             } else {
                 // 处理 ABS 等特殊节
                 uint64_t sec_base = (uint64_t)base + shdr[shndx].sh_offset; // 使用 sh_offset
                 uint64_t addr = sec_base + sym[i].st_value;
-                printk("Symbol %s: shndx=%d, sh_offset=%lx, st_value=%lx, base=%lx, addr=%lx\n",
+                plogk("Symbol %s: shndx=%d, sh_offset=%lx, st_value=%lx, base=%lx, addr=%lx\n",
                        name, shndx, shdr[shndx].sh_offset, sym[i].st_value, base, addr);
                 return sym[i].st_value;
             }

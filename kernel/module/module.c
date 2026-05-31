@@ -25,6 +25,7 @@ int init_mod()
 
 module_info *load_mod(Elf64_Ehdr *base_addr)
 {
+    plogk_info_stack[++plogk_info_ptr] = "Module";
     // int machine = ((Elf64_Ehdr *)ncfs.file_list[i].data_ptr)->e_machine;
     int machine = base_addr->e_machine;
     switch (machine) {
@@ -49,11 +50,12 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
     }
     elf_relocate_module(base_addr);
     mod_enter test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
-    printk(ansi_V("[ Module ]") "test _start:%p\t%p\n", test, *(uint64_t*)test);
+    plogk("test _start:%p\t%p\n", test, *(uint64_t *)test);
     module_info *mod = test(&kinfo);
-    printk(ansi_V("[ Module ]") "_start returned %p.\n", mod);
-    printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
-    printk(ansi_V("[ Module ]") "Module returned : %d\n", mod->init());
+    plogk("_start returned %p.\n", mod);
+    plogk(" Load module %s.\n", mod->name);
+    plogk("Module returned : %d\n", mod->init());
     // return mod;
+    plogk_info_ptr--;
     return 0;
 }
