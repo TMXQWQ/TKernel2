@@ -30,23 +30,30 @@ static inline uint32_t cpio_hex8_to_int_manual(const char hex[8])
 newc_filesystem cpio_parse(newc_header *base)
 {
     newc_header *header = base;
-#define tmp(a, b)   a->b[0], a->b[1], a->b[2], a->b[3], a->b[4], a->b[5], a->b[6], a->b[7]
-#define align(addr) ((addr + 3) & ~3)
+#define tmp(a, b)   (a)->b[0], (a)->b[1], (a)->b[2], (a)->b[3], (a)->b[4], (a)->b[5], (a)->b[6], (a)->b[7]
+#define align(addr) (((uintptr_t)(addr) + 3) & ~3)
     for (int i = 0; i < 128; i++) {
         uint64_t ino, size, namesize;
         ino      = cpio_hex8_to_int_manual((char[8]) {tmp(header, c_ino)});
         size     = cpio_hex8_to_int_manual((char[8]) {tmp(header, c_filesize)});
         namesize = cpio_hex8_to_int_manual((char[8]) {tmp(header, c_namesize)});
-        if (namesize >= 11 && !strcmp((char *)header->c_name, "TRAILER!!!")) {
-            size = i;
-            break;
-        }
-        if (i == 127) {
-            size = i;
-            break;
-        }
-        file_list[i] = (newc_file) {ino, size, (align(((uintptr_t)header + 110 + namesize))), (char*)header->c_name};
-        header       = (newc_header *)(align((uintptr_t)(((uintptr_t)header) + 110 + namesize + size)));
+        if (namesize >= 11 && !strcmp((char *)header->c_name, "TRAILER!!!")) { break; }
+        if (i == 127) { break; }
+        file_list[i] = (newc_file) {ino, size, (align(((uintptr_t)header + 110 + namesize))), (char *)header->c_name};
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wperformance-no-int-to-ptr"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#endif
+        header = (newc_header *)(align((uintptr_t)(((uintptr_t)header) + 110 + namesize + size)));
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+        // header = (newc_header *)align(((void*)header + 110 + namesize + size));
         ncfs.size++;
     }
 #undef tmp   //(a, b)

@@ -9,7 +9,7 @@ Elf64_Shdr* get_section_headers(Elf64_Ehdr *base) {
     return (Elf64_Shdr *)((char *)base + base->e_shoff);
 }
 
-int get_symbol_count(Elf64_Shdr *symtab_hdr) {
+Elf64_Xword get_symbol_count(Elf64_Shdr *symtab_hdr) {
     return symtab_hdr->sh_size / symtab_hdr->sh_entsize;
 }
 
@@ -21,7 +21,7 @@ Elf64_Shdr* get_target_section(Elf64_Shdr *rel_hdr, Elf64_Shdr *shdr) {
     return &shdr[rel_hdr->sh_info];
 }
 
-uint64_t get_symbol_address(void *base, const char *name) {
+static uint64_t get_symbol_address(void *base, const char *name) {
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
     Elf64_Shdr *shdr = (Elf64_Shdr *)(base + ehdr->e_shoff);
     int shnum = ehdr->e_shnum;

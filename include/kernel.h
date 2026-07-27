@@ -20,6 +20,7 @@
 #define KERNEL_VERSION "v0.0.1a" // Kernel version (x.x.x)
 #define STACK_SIZE     32768     // stack size
 #define KERNEL_ST_SZ   131072    // kernel stack size 128k
+#define MAX_MODULES    256
 
 /* Compiler judgment */
 #if defined(__clang__)

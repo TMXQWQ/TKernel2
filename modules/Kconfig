@@ -9,5 +9,5 @@ menuconfig MODULES
 if MODULES
     source "modules/test/Kconfig"
     source "modules/test2/Kconfig"
-    source "modules/LoT/Kconfig"
+    source "modules/UxTK/Kconfig"
 endif

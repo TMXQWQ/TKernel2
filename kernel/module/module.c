@@ -1,6 +1,7 @@
 #include "cpio.h"
 #include "elf_parse.h"
 #include "kernel.h"
+#include "kpi.h"
 #include "printk.h"
 #include "stddef.h"
 #include "stdint.h"
@@ -26,7 +27,6 @@ int init_mod()
 module_info *load_mod(Elf64_Ehdr *base_addr)
 {
     plogk_info_stack[++plogk_info_ptr] = "Module";
-    // int machine = ((Elf64_Ehdr *)ncfs.file_list[i].data_ptr)->e_machine;
     int machine = base_addr->e_machine;
     switch (machine) {
 #ifdef __x86_64__
@@ -46,16 +46,38 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
                                                                       machine == EM_RISCV     ? "RISC-V" :
                                                                       machine == EM_LOONGARCH ? "loongarch64" :
                                                                                                 "Unknown");
+            plogk_info_ptr--;
             return NULL;
     }
-    elf_relocate_module(base_addr);
-    mod_enter test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
-    plogk("test _start:%p\t%p\n", test, *(uint64_t *)test);
-    module_info *mod = test(&kinfo);
-    plogk("_start returned %p.\n", mod);
+    elf_relocate_module(base_addr, NULL);
+    // 2. 提前获取模块入口和 module_info
+    mod_enter    test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
+    module_info *mod  = test(&kinfo);
+    if (!mod) {
+        plogk("Failed to get module info\n");
+        plogk_info_ptr--;
+        return NULL;
+    }
     plogk(" Load module %s.\n", mod->name);
-    plogk("Module returned : %d\n", mod->init());
-    // return mod;
+
+    // 3. 如果是 KPI 模块，先加载所有依赖
+    if (mod->version == KPI_VERSION) {
+        for (uint32_t i = 0; i < mod->dep_count; i++) {
+            const char  *dep_name = mod->dependencies[i];
+            module_info *dep      = find_module(dep_name);
+            dep->refcount++;
+        }
+    }
+    // 4. 执行重定位（传入 mod）
+    elf_relocate_module(base_addr, mod);
+    
+    // 5. 若是 KPI 模块，注册其导出符号
+    if (mod->version == KPI_VERSION) { kpi_register_module(mod); }
+
+    // 6. 调用模块初始化
+    if (mod->init) { plogk("Module init returned: %d\n", mod->init()); }
+    mod->state = 2;
+
     plogk_info_ptr--;
-    return 0;
+    return mod; // 原代码返回 0，改为返回 mod 指针
 }

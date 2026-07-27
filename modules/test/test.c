@@ -14,6 +14,27 @@
 
 kernel_info *_kinfo;
 
+uintptr_t module_init(void);
+
+void test(){
+    printk("Test!!!\n");
+};
+
+#define EXPORT_COUNT 1
+kpi_export_sym mm_exports[] = {
+    { "test", (uintptr_t)test, STT_FUNC },
+};
+
+module_info mi = {
+    .name         = MI_NAME,
+    .init         = module_init,
+    .version      = KPI_VERSION,
+    .export_table = mm_exports,
+    .export_count = EXPORT_COUNT,
+    .dependencies = NULL,
+    .dep_count    = 0,
+};
+
 uintptr_t module_init(void)
 {
     printk("test\n");
@@ -21,9 +42,6 @@ uintptr_t module_init(void)
 }
 module_info *_start(kernel_info *ki)
 {
-    static module_info mi;
-    _kinfo  = ki;
-    mi.name = MI_NAME;
-    mi.init = module_init;
-    return (module_info*)&mi;
+    (void)ki;
+    return (module_info *)&mi;
 }
