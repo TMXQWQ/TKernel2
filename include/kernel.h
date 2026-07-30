@@ -12,6 +12,7 @@
 #ifndef INCLUDE_KERNEL_H_
 #define INCLUDE_KERNEL_H_
 
+#include "kpi.h"
 #include "limine.h"
 #include <stdint.h>
 #define BUILD_DATE     __DATE__  // Compilation Date
@@ -83,7 +84,7 @@ typedef struct {
         const char *kernel_name;
         const char *version;
         bootinfo    bootinfo;
-
+        kpi_t       kpi;
 } kernel_info;
 
 extern kernel_info kinfo;
