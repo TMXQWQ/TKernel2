@@ -10,6 +10,7 @@
  */
 
 #include "printk.h"
+#include "serial.h"
 #include "stdarg.h"
 #include "stddef.h"
 #include "stdint.h"
@@ -27,6 +28,10 @@ void printk(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
+    if (!stdio.handler) {
+        write_serial(SERIAL_PORT_1, '!');
+        for (;;);
+    }
     vwprintf(&stdio, format, args);
     va_end(args);
 }

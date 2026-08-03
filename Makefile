@@ -51,19 +51,19 @@ endif
 ifeq ($(CONFIG_ARCH), "x86_64")
 
 ifeq ($(CONFIG_CPU_FEATURE_FPU), y)
-  C_CONFIG += -DCPU_FEATURE_FPU=1
+  C_CONFIG += -DCPU_FEATURE_FPU=1 -mno-mmx -mno-80387
 else
   C_CONFIG += -DCPU_FEATURE_FPU=0 -mno-mmx -mno-80387
 endif
 
 ifeq ($(CONFIG_CPU_FEATURE_SSE), y)
-  C_CONFIG += -DCPU_FEATURE_SSE=1
+  C_CONFIG += -DCPU_FEATURE_SSE=1 -mno-sse -mno-sse2
 else
   C_CONFIG += -DCPU_FEATURE_SSE=0 -mno-sse -mno-sse2
 endif
 
 ifeq ($(CONFIG_CPU_FEATURE_AVX), y)
-  C_CONFIG += -DCPU_FEATURE_AVX=1
+  C_CONFIG += -DCPU_FEATURE_AVX=1 -mno-avx -mno-avx2
 else
   C_CONFIG += -DCPU_FEATURE_AVX=0 -mno-avx -mno-avx2
 endif
