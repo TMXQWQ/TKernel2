@@ -16,7 +16,7 @@ static void pERRk()
 
 void panic(const char *format, ...)
 {
-    disable_intr();
+    // disable_intr();
 #if KERNEL_LOG
     va_list args;
     va_start(args, format);

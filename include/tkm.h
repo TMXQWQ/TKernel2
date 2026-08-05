@@ -3,8 +3,6 @@
 #include "elf.h"
 #include "kernel.h"
 #include <stdint.h>
-
-// 在现有结构体中扩展，不破坏兼容性
 typedef struct module_info {
         char *name;
         uintptr_t (*init)();
