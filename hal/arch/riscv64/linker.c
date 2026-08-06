@@ -1,4 +1,4 @@
-#include "elf_parse.h"
+// #include "elf_parse.h"
 #include "kernel.h"
 #include "kpi.h"
 #include "printk.h"
@@ -7,42 +7,47 @@
 #include <stdint.h>
 #include <string.h>
 
-/* 辅助宏：从 32 位指令中提取/修改立即数位域 */
-#define RISCV_IMM_I(val) (((val) & 0xFFF) << 20)
-#define RISCV_IMM_S(val) ((((val) & 0x1F) << 7) | (((val) & 0xFE0) << 20))
+// 假设这些宏/函数已在外部定义
+// extern void plogk(const char *fmt, ...);
+// extern void *kpi_resolve_symbol(module_info *mod, const char *name);
+// extern ksym _symbol_table_start[], _symbol_table_end[];
+// extern struct kinfo kinfo;
+// extern int plogk_info_ptr;
+// extern char *plogk_info_stack[];
 
-static inline uint32_t insn_set_imm_i(uint32_t insn, int32_t imm)
-{
-    insn = (insn & ~(0xFFF << 20)) | RISCV_IMM_I(imm);
-    return insn;
+// 最大 PCREL_HI20 重定位条目数（可调整）
+#define MAX_PCREL_PAIRS 8192
+
+// 辅助函数：I类指令立即数编码
+static inline uint32_t insn_set_imm_i(uint32_t insn, int32_t imm) {
+    uint32_t uimm = (uint32_t)(imm & 0xFFF);
+    return (insn & ~(0xFFFUL << 20)) | (uimm << 20);
 }
 
-static inline uint32_t insn_set_imm_s(uint32_t insn, int32_t imm)
-{
-    insn = (insn & ~(0xFE0 << 20)) & ~(0x1F << 7);
-    insn |= RISCV_IMM_S(imm);
-    return insn;
+// 辅助函数：S类指令立即数编码
+static inline uint32_t insn_set_imm_s(uint32_t insn, int32_t imm) {
+    uint32_t uimm = (uint32_t)(imm & 0xFFF);
+    uint32_t imm11_5 = (uimm >> 5) & 0x7F;
+    uint32_t imm4_0  = uimm & 0x1F;
+    return (insn & ~(0x7FUL << 25)) | (imm11_5 << 25)
+         | (insn & ~(0x1FUL << 7))  | (imm4_0 << 7);
 }
 
-/* 用于配对 PCREL_HI20 和 PCREL_LO12 的映射表 */
-#define MAX_PCREL_PAIRS 128
-struct pcrel_pair {
-    uintptr_t auipc_addr;   // auipc 指令的运行时地址
-    uintptr_t target;       // 目标符号地址 (S + A)
-};
-
-void elf_relocate_module(void *base, module_info *mod)
+// 主函数：返回 0 成功，-1 失败
+int elf_relocate_module(void *base, module_info *mod)
 {
     plogk_info_stack[++plogk_info_ptr] = "RELOC";
-    if (!mod) {
-        plogk("Mod=Null.Skip kpi sym.\n");
+    if (!base) {
+        plogk("base is NULL, skipping relocation\n");
+        plogk_info_ptr--;
+        return -1;
     }
-    if (!base) return;
+    plogk("base=%p, mod=%p\n", base, mod);
 
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
     Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base + ehdr->e_shoff);
 
-    /* 先扫描符号表，以便后续使用 */
+    /* 定位符号表和字符串表 */
     Elf64_Shdr *symtab_hdr = NULL, *strtab_hdr = NULL;
     Elf64_Sym  *symtab     = NULL;
     char       *strtab     = NULL;
@@ -58,256 +63,300 @@ void elf_relocate_module(void *base, module_info *mod)
             break;
         }
     }
+    if (!symtab) {
+        plogk("No symbol table found\n");
+        plogk_info_ptr--;
+        return -1;
+    }
 
-    /* 存储 PCREL_HI20 配对信息 */
-    struct pcrel_pair pairs[MAX_PCREL_PAIRS];
+    // 定义 PCREL 配对结构
+    struct pcrel_pair {
+        uintptr_t auipc_addr;
+        uintptr_t target;       // 未解析时为 0
+        uint32_t  sym_idx;      // 用于调试
+        int64_t   addend;
+    } pairs[MAX_PCREL_PAIRS];
     int pair_count = 0;
 
-    /* 第一遍：处理所有 RELA 节，记录 HI20 配对 */
+    #define GET_SEC_BASE(idx) \
+        ((idx < ehdr->e_shnum) ? \
+            ((ehdr->e_type == ET_REL) ? ((uintptr_t)base + shdr[idx].sh_offset) : ((uintptr_t)base + shdr[idx].sh_addr)) : 0)
+
+    /* 第一遍：收集所有 PCREL_HI20（无论符号是否解析） */
     for (int i = 0; i < ehdr->e_shnum; i++) {
         if (shdr[i].sh_type != SHT_RELA) continue;
-
         Elf64_Shdr *rela_hdr = &shdr[i];
         Elf64_Rela *rela = (Elf64_Rela *)((char *)base + rela_hdr->sh_offset);
         int count = rela_hdr->sh_size / rela_hdr->sh_entsize;
-        uint32_t target_sec_idx = rela_hdr->sh_info;
-        if (target_sec_idx >= ehdr->e_shnum) continue;
-        uint64_t target_sec_base = (uint64_t)base + shdr[target_sec_idx].sh_offset;
+        uint32_t target_sec = rela_hdr->sh_info;
+        if (target_sec >= ehdr->e_shnum) {
+            plogk("First pass: invalid target_sec %u, skipping\n", target_sec);
+            continue;
+        }
+        uintptr_t target_base = GET_SEC_BASE(target_sec);
+        if (!target_base) continue;
 
         for (int j = 0; j < count; j++) {
             uint32_t type = ELF64_R_TYPE(rela[j].r_info);
             if (type == R_RISCV_PCREL_HI20) {
                 uint32_t sym_idx = ELF64_R_SYM(rela[j].r_info);
-                int64_t  addend  = rela[j].r_addend;
+                int64_t addend = rela[j].r_addend;
                 uintptr_t sym_addr = 0;
 
-                if (sym_idx > 0 && (uint64_t)sym_idx < (uint64_t)nsyms) {
+                // 尝试解析符号（与第二遍逻辑一致）
+                if (sym_idx < (uint32_t)nsyms && sym_idx > 0) {
                     Elf64_Sym *sym = &symtab[sym_idx];
-                    if (sym->st_shndx != SHN_UNDEF) {
-                        uint64_t sec_base = (uint64_t)base + shdr[sym->st_shndx].sh_offset;
-                        sym_addr = sec_base + sym->st_value;
-                    } else {
-                        const char *name = strtab + sym->st_name;
-                        if (mod && mod->version == KPI_VERSION) {
+                    const char *name = strtab + sym->st_name;
+                    if (sym->st_shndx < ehdr->e_shnum && sym->st_shndx != SHN_UNDEF) {
+                        uintptr_t sec_base = GET_SEC_BASE(sym->st_shndx);
+                        if (sec_base) sym_addr = sec_base + sym->st_value;
+                    } else if (sym->st_shndx == SHN_UNDEF) {
+                        if (mod && mod->version == KPI_VERSION)
                             sym_addr = kpi_resolve_symbol(mod, name);
-                        } else {
-                            for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++) {
-                                if (strcmp(p->name, name) == 0) {
+                        else if (mod) {
+                            for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++)
+                                if (!strcmp(p->name, name)) {
                                     sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
                                     break;
                                 }
-                            }
                         }
-                        if (!sym_addr) {
-                            plogk("FAILED to find external symbol '%s' (module %s)\n", name, mod ? mod->name : "(legacy)");
-                        }
+                        // 若 mod 为空，外部符号无法解析，sym_addr 保持 0
+                    } else if (sym->st_shndx == SHN_ABS) {
+                        sym_addr = sym->st_value;   // 绝对值
                     }
                 }
 
-                uintptr_t target = sym_addr + addend;
-                uintptr_t auipc_loc = (uintptr_t)target_sec_base + rela[j].r_offset;  // 修正点：使用目标节基址
-                if (pair_count < MAX_PCREL_PAIRS) {
-                    pairs[pair_count].auipc_addr = auipc_loc;
-                    pairs[pair_count].target     = target;
-                    pair_count++;
-                } else {
-                    plogk("PCREL_HI20: too many pairs, increase MAX_PCREL_PAIRS\n");
+                uintptr_t auipc_loc = target_base + rela[j].r_offset;
+                if (pair_count >= MAX_PCREL_PAIRS) {
+                    plogk("Too many PCREL_HI20 entries (max %d)\n", MAX_PCREL_PAIRS);
+                    plogk_info_ptr--;
+                    return -1;
                 }
+                pairs[pair_count].auipc_addr = auipc_loc;
+                pairs[pair_count].target = sym_addr ? (sym_addr + addend) : 0;
+                pairs[pair_count].sym_idx = sym_idx;
+                pairs[pair_count].addend = addend;
+                pair_count++;
             }
         }
     }
 
-    /* 第二遍：执行实际重定位 */
+    /* 第二遍：执行重定位 */
+    int ret = 0;
     for (int i = 0; i < ehdr->e_shnum; i++) {
         if (shdr[i].sh_type != SHT_RELA) continue;
-
         Elf64_Shdr *rela_hdr = &shdr[i];
         Elf64_Rela *rela = (Elf64_Rela *)((char *)base + rela_hdr->sh_offset);
         int count = rela_hdr->sh_size / rela_hdr->sh_entsize;
-        uint32_t target_sec_idx = rela_hdr->sh_info;
-        if (target_sec_idx >= ehdr->e_shnum) continue;
-        uint64_t target_sec_base = (uint64_t)base + shdr[target_sec_idx].sh_offset;
+        uint32_t target_sec = rela_hdr->sh_info;
+        if (target_sec >= ehdr->e_shnum) {
+            plogk("Second pass: invalid target_sec %u, skipping section\n", target_sec);
+            continue;
+        }
+        uintptr_t target_base = GET_SEC_BASE(target_sec);
+        if (!target_base) {
+            plogk("Second pass: target_base=0 for sec %u, skipping\n", target_sec);
+            continue;
+        }
 
         for (int j = 0; j < count; j++) {
-            uint32_t type    = ELF64_R_TYPE(rela[j].r_info);
+            uint32_t type = ELF64_R_TYPE(rela[j].r_info);
             uint32_t sym_idx = ELF64_R_SYM(rela[j].r_info);
-            int64_t  addend  = rela[j].r_addend;
+            int64_t addend = rela[j].r_addend;
+            uintptr_t *loc_ptr = (uintptr_t *)(target_base + rela[j].r_offset);
+            uint32_t *loc32 = (uint32_t *)loc_ptr;
+            uint64_t *loc64 = (uint64_t *)loc_ptr;
 
-            uintptr_t  *loc = (uintptr_t *)((uintptr_t)target_sec_base + rela[j].r_offset);
-            uintptr_t   sym_addr = 0;
-            const char *sym_name = "?";
-
-            if (sym_idx > 0 && (uint64_t)sym_idx < (uint64_t)nsyms) {
-                Elf64_Sym *sym = &symtab[sym_idx];
-                sym_name = strtab + sym->st_name;
-
-                if (sym->st_shndx != SHN_UNDEF) {
-                    uint64_t sec_base = (uint64_t)base + shdr[sym->st_shndx].sh_offset;
-                    sym_addr = sec_base + sym->st_value;
-                } else {
-                    if (!mod) continue;
-                    const char *name = strtab + sym->st_name;
-                    if (mod && mod->version == KPI_VERSION) {
-                        sym_addr = kpi_resolve_symbol(mod, name);
-                    } else {
-                        for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++) {
-                            if (strcmp(p->name, name) == 0) {
-                                sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
-                                break;
-                            }
-                        }
-                    }
-                    if (!sym_addr) {
-                        plogk("FAILED to find external symbol '%s' (module %s)\n", name, mod ? mod->name : "(legacy)");
-                    }
-                }
+            if (type == R_RISCV_ALIGN || type == R_RISCV_RELAX)
+                continue;
+            if (type == R_RISCV_RELATIVE) {
+                *loc64 = (uintptr_t)base + addend;
+                continue;
             }
 
-            uintptr_t value = 0;
-            uint32_t  insn;
+            if (sym_idx == 0) continue;
+            if (sym_idx >= (uint32_t)nsyms) {
+                plogk("Invalid sym_idx %u\n", sym_idx);
+                ret = -1; goto out;
+            }
+
+            Elf64_Sym *sym = &symtab[sym_idx];
+            const char *sym_name = strtab + sym->st_name;
+            uintptr_t sym_addr = 0;
+
+            /* 符号地址解析 */
+            if (sym->st_shndx < ehdr->e_shnum && sym->st_shndx != SHN_UNDEF) {
+                uintptr_t sec_base = GET_SEC_BASE(sym->st_shndx);
+                if (!sec_base) {
+                    plogk("Invalid section %d for symbol %s\n", sym->st_shndx, sym_name);
+                    ret = -1; goto out;
+                }
+                sym_addr = sec_base + sym->st_value;
+            } else if (sym->st_shndx == SHN_UNDEF) {
+                if (!mod) {
+                    plogk("External symbol '%s' but mod is NULL\n", sym_name);
+                    ret = -1; goto out;
+                }
+                if (mod->version == KPI_VERSION)
+                    sym_addr = kpi_resolve_symbol(mod, sym_name);
+                else {
+                    for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++)
+                        if (!strcmp(p->name, sym_name)) {
+                            sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
+                            break;
+                        }
+                }
+                if (!sym_addr) {
+                    plogk("Failed to resolve external symbol '%s'\n", sym_name);
+                    ret = -1; goto out;
+                }
+            } else if (sym->st_shndx == SHN_ABS) {
+                sym_addr = sym->st_value;
+            } else {
+                plogk("Invalid st_shndx %d for %s\n", sym->st_shndx, sym_name);
+                ret = -1; goto out;
+            }
+
+            uint32_t insn;
+            uintptr_t value;
 
             switch (type) {
-                /* ---- 绝对地址 ---- */
                 case R_RISCV_64:
                     value = sym_addr + addend;
-                    *(uint64_t *)loc = (uint64_t)value;
+                    *loc64 = value;
                     break;
                 case R_RISCV_32:
-                    value = (uint32_t)(sym_addr + addend);
-                    *(uint32_t *)loc = (uint32_t)value;
+                    *loc32 = (uint32_t)(sym_addr + addend);
                     break;
-
-                /* ---- 基址相对 ---- */
-                case R_RISCV_RELATIVE:
-                    value = (uintptr_t)base + addend;
-                    *loc = value;
-                    break;
-
-                /* ---- PC 相对调用（auipc + jalr） ---- */
                 case R_RISCV_CALL:
                 case R_RISCV_CALL_PLT: {
-                    uint32_t *auipc_insn = (uint32_t *)loc;
-                    uint32_t *jalr_insn  = (uint32_t *)((uintptr_t)loc + 4);
-
-                    if ((*jalr_insn & 0x7f) != 0x67) {
-                        plogk("R_RISCV_CALL: expected jalr after auipc at %p\n", loc);
-                        break;
-                    }
-                    int rd  = (*auipc_insn >> 7) & 0x1f;
-                    int rs1 = (*jalr_insn >> 15) & 0x1f;
-                    if (rd != rs1) {
-                        plogk("R_RISCV_CALL: rd != rs1 at %p\n", loc);
-                        break;
-                    }
-
-                    int64_t delta = sym_addr + addend - (uintptr_t)loc;
+                    uint32_t *auipc = loc32;
+                    uint32_t *jalr = loc32 + 1;
+                    if ((*jalr & 0x7f) != 0x67) break;
+                    int rd = (*auipc >> 7) & 0x1f;
+                    int rs1 = (*jalr >> 15) & 0x1f;
+                    if (rd != rs1) break;
+                    int64_t delta = sym_addr + addend - (uintptr_t)auipc;
                     int32_t hi = (int32_t)((delta + 0x800) >> 12);
                     int32_t lo = (int32_t)(delta & 0xfff);
-                    if (lo & 0x800) hi += 1;
-
-                    *auipc_insn = (*auipc_insn & ~(0xfffff << 12)) | ((hi & 0xfffff) << 12);
-                    *jalr_insn  = (*jalr_insn & ~(0xfff << 20)) | ((lo & 0xfff) << 20);
+                    if (lo & 0x800) hi++;
+                    *auipc = (*auipc & ~(0xfffffUL << 12)) | ((hi & 0xfffff) << 12);
+                    *jalr  = (*jalr  & ~(0xfffUL << 20)) | ((lo & 0xfff) << 20);
                     break;
                 }
-
-                /* ---- PCREL HI20/LO12 配对（用于全局数据访问） ---- */
                 case R_RISCV_PCREL_HI20: {
-                    uintptr_t target = sym_addr + addend;
-                    int64_t delta = target - (uintptr_t)loc;
+                    int64_t delta = sym_addr + addend - (uintptr_t)loc32;
                     int32_t hi = (int32_t)((delta + 0x800) >> 12);
-                    insn = *(uint32_t *)loc;
-                    insn = (insn & ~(0xfffff << 12)) | ((hi & 0xfffff) << 12);
-                    *(uint32_t *)loc = insn;
+                    insn = *loc32;
+                    insn = (insn & ~(0xfffffUL << 12)) | ((hi & 0xfffff) << 12);
+                    *loc32 = insn;
                     break;
                 }
                 case R_RISCV_PCREL_LO12_I:
                 case R_RISCV_PCREL_LO12_S: {
-                    Elf64_Sym *sym = &symtab[sym_idx];
-                    // 检查 st_shndx 有效性
                     if (sym->st_shndx >= ehdr->e_shnum || sym->st_shndx == SHN_UNDEF) {
-                        plogk("PCREL_LO12: invalid st_shndx %d for symbol %s\n", sym->st_shndx, sym_name);
-                        break;
+                        plogk("LO12 symbol invalid section\n");
+                        ret = -1; goto out;
                     }
-                    uintptr_t auipc_addr = (uintptr_t)base + shdr[sym->st_shndx].sh_offset + sym->st_value;
-
+                    uintptr_t auipc_addr = GET_SEC_BASE(sym->st_shndx) + sym->st_value;
                     uintptr_t target = 0;
-                    int found = 0;
                     for (int k = 0; k < pair_count; k++) {
                         if (pairs[k].auipc_addr == auipc_addr) {
                             target = pairs[k].target;
-                            found = 1;
                             break;
                         }
                     }
-                    if (!found) {
-                        plogk("PCREL_LO12: no matching HI20 for auipc at %p\n", (void*)auipc_addr);
-                        break;
+                    if (!target) {
+                        plogk("LO12 cannot find matching HI20 or target unresolved for auipc=%p\n", (void*)auipc_addr);
+                        ret = -1; goto out;
                     }
                     int32_t lo = (int32_t)(target - auipc_addr) & 0xFFF;
-                    insn = *(uint32_t *)loc;
+                    insn = *loc32;
                     if (type == R_RISCV_PCREL_LO12_I)
                         insn = insn_set_imm_i(insn, lo);
                     else
                         insn = insn_set_imm_s(insn, lo);
-                    *(uint32_t *)loc = insn;
+                    *loc32 = insn;
                     break;
                 }
-
-                /* ---- HI20/LO12 绝对寻址 ---- */
                 case R_RISCV_HI20: {
                     uintptr_t target = sym_addr + addend;
                     int32_t hi = (int32_t)((target + 0x800) >> 12);
-                    insn = *(uint32_t *)loc;
+                    insn = *loc32;
                     insn = insn_set_imm_i(insn, hi);
-                    *(uint32_t *)loc = insn;
+                    *loc32 = insn;
                     break;
                 }
                 case R_RISCV_LO12_I:
                 case R_RISCV_LO12_S: {
                     uintptr_t target = sym_addr + addend;
                     int32_t lo = (int32_t)(target & 0xFFF);
-                    insn = *(uint32_t *)loc;
+                    insn = *loc32;
                     if (type == R_RISCV_LO12_I)
                         insn = insn_set_imm_i(insn, lo);
                     else
                         insn = insn_set_imm_s(insn, lo);
-                    *(uint32_t *)loc = insn;
+                    *loc32 = insn;
                     break;
                 }
-
-                /* ---- GOT 相关（仅做简单处理） ---- */
                 case R_RISCV_GOT_HI20: {
-                    int64_t delta = sym_addr + addend - (uintptr_t)loc;
-                    int32_t hi = (int32_t)((delta + 0x800) >> 12);
-                    insn = *(uint32_t *)loc;
-                    insn = insn_set_imm_i(insn, hi);
-                    *(uint32_t *)loc = insn;
+                    // 简化处理：按绝对地址的HI20 (实际应填入GOT表偏移，此处仅为兼容)
+                    uintptr_t target = sym_addr + addend;
+                    int32_t hi = (int32_t)((target + 0x800) >> 12);
+                    insn = *loc32;
+                    insn = (insn & ~(0xfffffUL << 12)) | ((hi & 0xfffff) << 12);
+                    *loc32 = insn;
                     break;
                 }
-
-                /* ---- 分支和跳转（占位） ---- */
-                case R_RISCV_BRANCH:
-                case R_RISCV_JAL:
-                    plogk("Warning: R_RISCV_BRANCH/JAL not fully handled at %p (sym=%s)\n", loc, sym_name);
+                case R_RISCV_BRANCH: {
+                    int64_t delta = sym_addr + addend - (uintptr_t)loc32;
+                    if (delta < -0x100000 || delta >= 0x100000) {
+                        plogk("Branch offset out of range\n");
+                        ret = -1; goto out;
+                    }
+                    uint32_t imm = (uint32_t)(delta & 0x1FFFFF);
+                    uint32_t imm12 = (imm >> 12) & 1;
+                    uint32_t imm11 = (imm >> 11) & 1;
+                    uint32_t imm10_5 = (imm >> 5) & 0x3F;
+                    uint32_t imm4_1 = (imm >> 1) & 0xF;
+                    insn = *loc32;
+                    insn = (insn & ~(0x1UL << 31)) | (imm12 << 31);
+                    insn = (insn & ~(0x1UL << 7))  | (imm11 << 7);
+                    insn = (insn & ~(0x3FUL << 25)) | (imm10_5 << 25);
+                    insn = (insn & ~(0xFUL << 8))  | (imm4_1 << 8);
+                    *loc32 = insn;
                     break;
-
-                /* ---- 忽略的标记类型 ---- */
-                case R_RISCV_ALIGN:
-                case R_RISCV_RELAX:
+                }
+                case R_RISCV_JAL: {
+                    int64_t delta = sym_addr + addend - (uintptr_t)loc32;
+                    if (delta < -0x100000 || delta >= 0x100000) {
+                        plogk("JAL offset out of range\n");
+                        ret = -1; goto out;
+                    }
+                    uint32_t imm = (uint32_t)(delta & 0x1FFFFF);
+                    uint32_t imm20 = (imm >> 20) & 1;
+                    uint32_t imm19_12 = (imm >> 12) & 0xFF;
+                    uint32_t imm11 = (imm >> 11) & 1;
+                    uint32_t imm10_1 = (imm >> 1) & 0x3FF;
+                    insn = *loc32;
+                    insn = (insn & ~(0x1UL << 31)) | (imm20 << 31);
+                    insn = (insn & ~(0xFFUL << 12)) | (imm19_12 << 12);
+                    insn = (insn & ~(0x1UL << 20)) | (imm11 << 20);
+                    insn = (insn & ~(0x3FFUL << 21)) | (imm10_1 << 21);
+                    *loc32 = insn;
                     break;
-
-                /* ---- 32位PC相对 ---- */
+                }
                 case R_RISCV_32_PCREL:
-                    value = (uint32_t)(sym_addr + addend - (uintptr_t)loc);
-                    *(uint32_t *)loc = (uint32_t)value;
+                    *loc32 = (uint32_t)(sym_addr + addend - (uintptr_t)loc32);
                     break;
-
                 default:
-                    plogk("Unsupported RISC-V relocation type %d at %p (sym=%s)\n", type, loc, sym_name);
-                    break;
+                    plogk("Unsupported relocation type %d at %p\n", type, loc32);
+                    ret = -1; goto out;
             }
         }
     }
 
+out:
     plogk_info_ptr--;
+    return ret;
 }
