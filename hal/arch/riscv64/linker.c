@@ -7,14 +7,6 @@
 #include <stdint.h>
 #include <string.h>
 
-// 假设这些宏/函数已在外部定义
-// extern void plogk(const char *fmt, ...);
-// extern void *kpi_resolve_symbol(module_info *mod, const char *name);
-// extern ksym _symbol_table_start[], _symbol_table_end[];
-// extern struct kinfo kinfo;
-// extern int plogk_info_ptr;
-// extern char *plogk_info_stack[];
-
 // 最大 PCREL_HI20 重定位条目数（可调整）
 #define MAX_PCREL_PAIRS 8192
 
@@ -114,7 +106,7 @@ int elf_relocate_module(void *base, module_info *mod)
                         if (mod && mod->version == KPI_VERSION)
                             sym_addr = kpi_resolve_symbol(mod, name);
                         else if (mod) {
-                            for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++)
+                            for (ksym *p = ksym_table_start; p < ksym_table_end; p++)
                                 if (!strcmp(p->name, name)) {
                                     sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
                                     break;
@@ -200,7 +192,7 @@ int elf_relocate_module(void *base, module_info *mod)
                 if (mod->version == KPI_VERSION)
                     sym_addr = kpi_resolve_symbol(mod, sym_name);
                 else {
-                    for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++)
+                    for (ksym *p = ksym_table_start; p < ksym_table_end; p++)
                         if (!strcmp(p->name, sym_name)) {
                             sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
                             break;

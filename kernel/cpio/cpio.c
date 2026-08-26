@@ -42,11 +42,12 @@ newc_filesystem cpio_parse(newc_header *base)
         file_list[i] = (newc_file) {ino, size, (align(((uintptr_t)header + 110 + namesize))), (char *)header->c_name};
 #if defined(__clang__)
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wperformance-no-int-to-ptr"
+#pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #endif
+        // NOLINTNEXTLINE(performance-no-int-to-ptr) : aligning a raw address requires integer arithmetic
         header = (newc_header *)(align((uintptr_t)(((uintptr_t)header) + 110 + namesize + size)));
 #if defined(__clang__)
 #pragma clang diagnostic pop

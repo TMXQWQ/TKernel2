@@ -56,8 +56,8 @@ typedef struct {
         uintptr_t offset;
 } ksym;
 
-extern ksym _symbol_table_start[];
-extern ksym _symbol_table_end[];
+extern ksym ksym_table_start[];
+extern ksym ksym_table_end[];
 
 // extern enum BL {
 //     Unkown = 0,

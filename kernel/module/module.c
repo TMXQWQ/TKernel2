@@ -16,6 +16,7 @@ int init_mod()
             if (tmp[j] == '.' && tmp[j + 1] != '\0' && tmp[j + 2] != '\0' && tmp[j + 3] != '\0' && tmp[j + 1] == 't' && tmp[j + 2] == 'k'
                 && tmp[j + 3] == 'm') {
                 // test             = elf_pie_enter_parse((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
+                // NOLINTNEXTLINE(performance-no-int-to-ptr) : module image address stored as uintptr_t
                 module_info *mod = load_mod((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
                 (void)mod;
                 // printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
@@ -51,6 +52,7 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
     }
     elf_relocate_module(base_addr, NULL);
     // 2. 提前获取模块入口和 module_info
+    // NOLINTNEXTLINE(performance-no-int-to-ptr) : recovering a function pointer from the ELF entry address
     mod_enter    test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
     module_info *mod  = test(&kinfo);
     if (!mod) {

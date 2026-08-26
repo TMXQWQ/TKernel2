@@ -30,7 +30,7 @@ void printk(const char *format, ...)
     va_start(args, format);
     if (!stdio.handler) {
         // write_serial(SERIAL_PORT_1, '!');
-        for (;;);
+        while(1);
     }
     vwprintf(&stdio, format, args);
     va_end(args);

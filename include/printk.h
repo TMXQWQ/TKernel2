@@ -37,10 +37,10 @@
 #define ansi_shine_fast 6
 #define ansi_delline    9
 
-#define __ansi_tmp_macro1(x) #x
-#define __ansi_tmp_macro2(x) __ansi_tmp_macro1(x)
+#define ansi_tmp_macro1(x) #x
+#define ansi_tmp_macro2(x) ansi_tmp_macro1(x)
 #define ansi_color(info, background, frontground, flags) \
-    "\e["__ansi_tmp_macro2(flags) ";3"__ansi_tmp_macro2(frontground) ";4"__ansi_tmp_macro2(background) "m" info "\e[0m"
+    "\e["ansi_tmp_macro2(flags) ";3"ansi_tmp_macro2(frontground) ";4"ansi_tmp_macro2(background) "m" info "\e[0m"
 
 // clang-format off
 // 默认内核输出日志开头的ansi序列

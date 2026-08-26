@@ -16,6 +16,7 @@
 #ifdef __x86_64__
 
 /* Port write (8 bits) */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) : conventional out* API keeps port,value order
 void outb(uint16_t port, uint8_t value)
 { __asm__ volatile("outb %1, %0" ::"dN"(port), "a"(value)); }
 
@@ -28,6 +29,7 @@ uint8_t inb(uint16_t port)
 }
 
 /* Port write (16 bits) */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) : conventional out* API keeps port,value order
 void outw(uint16_t port, uint16_t value)
 { __asm__ volatile("outw %1, %0" ::"dN"(port), "a"(value)); }
 
@@ -40,6 +42,7 @@ uint16_t inw(uint16_t port)
 }
 
 /* Port write (32 bits) */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) : conventional out* API keeps port,value order
 void outl(uint16_t port, uint32_t value)
 { __asm__ volatile("outl %1, %0" ::"dN"(port), "a"(value)); }
 
@@ -104,6 +107,7 @@ uint64_t rdmsr(uint32_t msr)
 }
 
 /* Write to msr register */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) : conventional rdmsr/wrmsr API keeps msr,value order
 void wrmsr(uint32_t msr, uint64_t value)
 {
     uint32_t rax = (uint32_t)value;
@@ -124,7 +128,7 @@ void store(uint64_t *addr, uint32_t value)
 { __asm__ volatile("lock xchg %[value], %[addr];" : [addr] "+m"(*addr), [value] "+r"(value)::"memory"); }
 
 /* Basic rdtsc reading */
-uint64_t rdtsc(void)
+static __attribute__((unused)) uint64_t rdtsc(void)
 {
     uint32_t lo, hi;
     __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi) : : "memory");
@@ -132,7 +136,7 @@ uint64_t rdtsc(void)
 }
 
 /* Serialized rdtsc reads */
-uint64_t rdtsc_serialized(void)
+static __attribute__((unused)) uint64_t rdtsc_serialized(void)
 {
     uint32_t lo, hi;
     __asm__ volatile("mfence\n\t"
@@ -145,7 +149,7 @@ uint64_t rdtsc_serialized(void)
 }
 
 /* Basic rdtscp reading */
-uint64_t rdtscp(uint32_t *aux)
+static __attribute__((unused)) uint64_t rdtscp(uint32_t *aux)
 {
     uint32_t lo, hi;
     __asm__ volatile("rdtscp" : "=a"(lo), "=d"(hi), "=c"(*aux) : : "memory");
@@ -153,7 +157,7 @@ uint64_t rdtscp(uint32_t *aux)
 }
 
 /* Serialized rdtscp reads */
-uint64_t rdtscp_serialized(uint32_t *aux)
+static __attribute__((unused)) uint64_t rdtscp_serialized(uint32_t *aux)
 {
     uint32_t lo, hi;
     __asm__ volatile("mfence\n\t"

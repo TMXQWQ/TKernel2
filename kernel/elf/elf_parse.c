@@ -40,9 +40,9 @@ static uint64_t get_symbol_address(void *base, const char *name) {
     if (!symtab_hdr) return 0;
 
     Elf64_Sym *sym = (Elf64_Sym *)(base + symtab_hdr->sh_offset);
-    int symcount = symtab_hdr->sh_size / sizeof(Elf64_Sym);
+    size_t symcount = symtab_hdr->sh_size / sizeof(Elf64_Sym);
 
-    for (int i = 0; i < symcount; i++) {
+    for (size_t i = 0; i < symcount; i++) {
         if (strcmp(strtab + sym[i].st_name, name) == 0) {
             uint16_t shndx = sym[i].st_shndx;
             if (shndx != SHN_UNDEF && shndx < SHN_LORESERVE && shndx < shnum) {
@@ -68,6 +68,7 @@ static uint64_t get_symbol_address(void *base, const char *name) {
 enter elf_pie_enter_parse(Elf64_Ehdr *base)
 {
     // return (enter)(((uintptr_t)(base->e_entry) + (uintptr_t)elf_get_section(base, ".text")));
+    // NOLINTNEXTLINE(performance-no-int-to-ptr) : recovering a function pointer from a stored address
     return (enter)(uintptr_t)get_symbol_address(base,"_start");
 }
 

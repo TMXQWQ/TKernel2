@@ -11,7 +11,7 @@ kernel_info kinfo = {
 };
 
 void executable_entry(void)
-{ for (;;); }
+{ for (;;) {} }
 
 void kernel_entry(void)
 {

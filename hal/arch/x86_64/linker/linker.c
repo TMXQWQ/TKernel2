@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "elf_parse.h"
 #include "kernel.h"
 #include "kpi.h"
@@ -11,10 +12,8 @@
 void elf_relocate_module(void *base, module_info *mod)
 {
     plogk_info_stack[++plogk_info_ptr] = "RELOC";
-    if (!mod) {
-        plogk("Mod=Null.Skip kpi sym.\n");
-    }
-    if (!base) return;
+    if (!mod) { plogk("Mod=Null.Skip kpi sym.\n"); }
+    if (!base) goto END;
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
 
     Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base + ehdr->e_shoff);
@@ -54,24 +53,21 @@ void elf_relocate_module(void *base, module_info *mod)
                     uint64_t sec_base = (uint64_t)base + shdr[sym->st_shndx].sh_offset;
                     sym_addr          = sec_base + sym->st_value;
                 } else {
-                    if (!mod) {
-                        continue;
-                    }
+                    if (!mod) { continue; }
                     // 外部符号：使用 KPI 解析（如果可用）
                     const char *name = strtab + sym->st_name;
                     if (mod && mod->version == KPI_VERSION) {
                         // 调用 KPI 符号解析（仅限依赖模块）
                         sym_addr = kpi_resolve_symbol(mod, name);
                     } else {
-                        // 兼容旧模式：只在内核符号表查找
-                        for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++) {
+                        for (ksym *p = ksym_table_start; p < ksym_table_end; p++) {
                             if (strcmp(p->name, name) == 0) {
                                 sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
                                 break;
                             }
                         }
                     }
-                    if (!sym_addr) { plogk("FAILED to find external symbol '%s' (module %s)\n", name, mod ? mod->name : "(legacy)"); }
+                    // if (!sym_addr) { panic("FAILED to find external symbol '%s' (module %s)\n", name, mod ? mod->name : "(legacy)"); }
                 }
             }
 
@@ -98,9 +94,11 @@ void elf_relocate_module(void *base, module_info *mod)
                     break;
                 default :
                     plogk("Unsupported type %d at %p (sym=%s)\n", type, loc, sym_name);
+                    // panic("Error while Sloving Modules\n\tModule Name:%s\n\tCause of No Support Rel Type", mod ? mod->name : "(legacy)");
                     break;
             }
         }
     }
+END:
     plogk_info_ptr--;
 }

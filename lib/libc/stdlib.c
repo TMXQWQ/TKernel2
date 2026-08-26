@@ -176,6 +176,7 @@ int skip_atoi(const char **s)
 }
 
 /* Formatting an integer as a string */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) : public formatting API, signature fixed by stdlib.h
 char *number(char *str, size_t num, size_t base, size_t size, size_t precision, int type)
 {
     char        c, tmp[65];
@@ -257,6 +258,7 @@ char *number(char *str, size_t num, size_t base, size_t size, size_t precision, 
 }
 
 /* Returns the size of a string with an integer formatted by `number()` */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) : public API, signature fixed by stdlib.h
 uint64_t number_length(size_t num, size_t base, size_t size, size_t precision, int type)
 {
     /* This function is for malloc a enough space for `number()` */

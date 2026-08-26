@@ -1,4 +1,5 @@
-#pragma once
+#ifndef INCLUDE_OS_TERMINAL_H_
+#define INCLUDE_OS_TERMINAL_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -73,3 +74,5 @@ extern "C" {
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus
+
+#endif // INCLUDE_OS_TERMINAL_H_

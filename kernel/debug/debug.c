@@ -14,6 +14,7 @@ static void pERRk()
     printk("\e[0m");
 }
 
+// NOLINTNEXTLINE(misc-use-internal-linkage) : exported public API used by modules (debug.h)
 void panic(const char *format, ...)
 {
     // disable_intr();

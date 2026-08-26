@@ -17,9 +17,9 @@ module_info *find_module(const char *name)
 }
 
 // 内核符号查询（原有逻辑）
-uintptr_t kernel_symbol(const char *name)
+static uintptr_t kernel_symbol(const char *name)
 {
-    for (ksym *p = _symbol_table_start; p < _symbol_table_end; p++) {
+    for (ksym *p = ksym_table_start; p < ksym_table_end; p++) {
         if (strcmp(p->name, name) == 0) return kinfo.bootinfo.kernel_base_addr + p->offset;
     }
     return 0;

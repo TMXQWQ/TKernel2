@@ -86,8 +86,8 @@ esac
 # 3. 生成汇编
 cat > "$tmp_asm" <<EOF
 .section .st, "a", @progbits
-.globl _symbol_table_start
-_symbol_table_start:
+.globl ksym_table_start
+ksym_table_start:
 EOF
 
 i=0
@@ -102,8 +102,8 @@ while read addr name; do
 done < "$tmp_sym"
 
 cat >> "$tmp_asm" <<EOF
-.globl _symbol_table_end
-_symbol_table_end:
+.globl ksym_table_end
+ksym_table_end:
 EOF
 
 echo -e "$str_defs" >> "$tmp_asm"

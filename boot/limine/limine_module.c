@@ -14,9 +14,9 @@
 #include "string.h"
 #include "kernel.h"
 
-lmodule_t     lmodule[128];
-log_buffer_t  lmodule_log;
-static size_t lmodule_count = 0;
+static lmodule_t lmodule[128];
+log_buffer_t     lmodule_log;
+static size_t    lmodule_count = 0;
 
 /* Extract filename from module path */
 static void extract_name(const char *input, char *output, size_t output_size)
