@@ -5,6 +5,7 @@
 #include "printk.h"
 #include "stddef.h"
 #include "stdint.h"
+#include "string.h"
 #include "tkm.h"
 #include <elf.h>
 
@@ -72,7 +73,19 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
     }
     // 4. 执行重定位（传入 mod）
     elf_relocate_module(base_addr, mod);
-    
+
+    // 4.1 清零 NOBITS（.bss）段：模块镜像直接使用 cpio 文件缓冲区，
+    //     而 .bss 无文件内容（sh_offset 与 .rela.text 重叠），必须手动清零，
+    //     否则模块内静态变量（如自旋锁 {0,0}）会读到垃圾值导致死锁。
+    {
+        Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base_addr + base_addr->e_shoff);
+        for (uint32_t i = 0; i < base_addr->e_shnum; i++) {
+            if (shdr[i].sh_type == SHT_NOBITS) {
+                memset((char *)base_addr + shdr[i].sh_offset, 0, shdr[i].sh_size);
+            }
+        }
+    }
+
     // 5. 若是 KPI 模块，注册其导出符号
     if (mod->version == KPI_VERSION) { kpi_register_module(mod); }
 
