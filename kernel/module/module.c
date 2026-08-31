@@ -20,7 +20,7 @@ int init_mod()
                 // NOLINTNEXTLINE(performance-no-int-to-ptr) : module image address stored as uintptr_t
                 module_info *mod = load_mod((Elf64_Ehdr *)ncfs.file_list[i].data_ptr);
                 (void)mod;
-                // printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
+                printk(ansi_V("[ Module ]") " Load module %s.\n", mod->name);
             }
     }
     return 0;
@@ -29,7 +29,7 @@ int init_mod()
 module_info *load_mod(Elf64_Ehdr *base_addr)
 {
     plogk_info_stack[++plogk_info_ptr] = "Module";
-    int machine = base_addr->e_machine;
+    int machine                        = base_addr->e_machine;
     switch (machine) {
 #ifdef __x86_64__
         case EM_X86_64 :
@@ -51,14 +51,23 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
             plogk_info_ptr--;
             return NULL;
     }
-    
+
+    //     清零 NOBITS（.bss）段：模块镜像直接使用 cpio 文件缓冲区，
+    //     而 .bss 无文件内容（sh_offset 与 .rela.text 重叠），必须手动清零，
+    //     否则模块内静态变量（如自旋锁 {0,0}）会读到垃圾值导致死锁。
+    {
+        Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base_addr + base_addr->e_shoff);
+        for (uint32_t i = 0; i < base_addr->e_shnum; i++) {
+            if (shdr[i].sh_type == SHT_NOBITS) { memset((char *)base_addr + shdr[i].sh_offset, 0, shdr[i].sh_size); }
+        }
+    }
     // 第一阶段：重定位内核符号和内部导出符号（mod == NULL）
     elf_relocate_module(base_addr, NULL);
 
     // 提前获取模块入口和 module_info
     // NOLINTNEXTLINE(performance-no-int-to-ptr) : recovering a function pointer from the ELF entry address
-    mod_enter test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
-    module_info *mod = test(&kinfo);
+    mod_enter    enter = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
+    module_info *mod   = enter(&kinfo);
     if (!mod) {
         plogk("Failed to get module info\n");
         plogk_info_ptr--;
@@ -70,8 +79,8 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
     if (mod->version == KPI_VERSION) {
         // 1. 先处理所有依赖模块的引用计数
         for (uint32_t i = 0; i < mod->dep_count; i++) {
-            const char *dep_name = mod->dependencies[i];
-            module_info *dep = find_module(dep_name);
+            const char  *dep_name = mod->dependencies[i];
+            module_info *dep      = find_module(dep_name);
             if (dep) {
                 dep->refcount++;
             } else {
@@ -85,18 +94,6 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
 
     // 3. 若是 KPI 模块，注册其导出符号（供后续模块使用）
     if (mod->version == KPI_VERSION) { kpi_register_module(mod); }
-
-    // 4. 清零 NOBITS（.bss）段：模块镜像直接使用 cpio 文件缓冲区，
-    //     而 .bss 无文件内容（sh_offset 与 .rela.text 重叠），必须手动清零，
-    //     否则模块内静态变量（如自旋锁 {0,0}）会读到垃圾值导致死锁。
-    {
-        Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base_addr + base_addr->e_shoff);
-        for (uint32_t i = 0; i < base_addr->e_shnum; i++) {
-            if (shdr[i].sh_type == SHT_NOBITS) {
-                memset((char *)base_addr + shdr[i].sh_offset, 0, shdr[i].sh_size);
-            }
-        }
-    }
 
     // 5. 调用模块初始化
     if (mod->init) { plogk("Module init returned: %d\n", mod->init()); }

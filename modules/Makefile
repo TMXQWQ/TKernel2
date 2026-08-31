@@ -48,11 +48,24 @@ endif
 # 构建所有启用的模块
 .PHONY: $(MODULE_LIST)
 $(MODULE_LIST): %: 
-	$(V) make all -C $(basename $*)
+	$(V) echo "Building $@ in $(patsubst %.tkm,%,$@)"
+	$(V) if [ "$@" = "TASK_MODULE.tkm" ]; then \
+		echo "Special handling for TASK_MODULE.tkm"; \
+		make all -C task; \
+	else \
+		make all -C $(patsubst %.tkm,%,$@); \
+	fi
 
 # 确保所有模块都被构建
 ALL_MODULES := $(MODULE_LIST)
 all-modules: $(ALL_MODULES)
+
+# Debug target
+debug:
+	@echo "MODULE_LIST: $(MODULE_LIST)"
+	@echo "ALL_MODULES: $(ALL_MODULES)"
+	@echo "Current directory: $(pwd)"
+	@echo "Files in current directory: $(wildcard *.tkm)"
 
 initrd.img: $(ALL_MODULES)
 	$(V)

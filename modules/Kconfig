@@ -2,7 +2,7 @@ menuconfig MODULES
     bool "Module config"
     default y
     modules
-	select EXECMEM
+    select EXECMEM
     help
       This option allows you to build parts of the kernel as modules.
 
@@ -10,4 +10,5 @@ if MODULES
     source "modules/test/Kconfig"
     source "modules/test2/Kconfig"
     source "modules/UxTK/Kconfig"
+    source "modules/task/Kconfig"
 endif

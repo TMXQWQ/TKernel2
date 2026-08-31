@@ -78,3 +78,5 @@ modules/UxTK/*
 !modules/test2
 modules/*
 
+modules/module_manifest.json
+modules/module_list.txt
