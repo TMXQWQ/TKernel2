@@ -8,11 +8,21 @@
 #include <stdint.h>
 #include <string.h>
 
-// 修改函数声明，增加 mod 参数
+// 通过内核符号表解析内核导出符号
+static uintptr_t resolve_kernel_symbol(const char *name)
+{
+    for (ksym *p = ksym_table_start; p < ksym_table_end; p++) {
+        if (strcmp(p->name, name) == 0) return kinfo.bootinfo.kernel_base_addr + p->offset;
+    }
+    return 0;
+}
+
+// 两阶段模块重定位：
+//   - mod == NULL：第一阶段，只重定位内部符号（模块内）+ 内核导出符号（ksym 表）
+//   - mod != NULL：第二阶段，统一重定位外部符号（模块间 KPI 导出，回退到内核符号表）
 void elf_relocate_module(void *base, module_info *mod)
 {
     plogk_info_stack[++plogk_info_ptr] = "RELOC";
-    if (!mod) { plogk("Mod=Null.Skip kpi sym.\n"); }
     if (!base) goto END;
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
 
@@ -53,25 +63,23 @@ void elf_relocate_module(void *base, module_info *mod)
                     uint64_t sec_base = (uint64_t)base + shdr[sym->st_shndx].sh_offset;
                     sym_addr          = sec_base + sym->st_value;
                 } else {
-                    if (!mod) { continue; }
-                    // 外部符号：使用 KPI 解析（如果可用）
+                    // 外部符号
                     const char *name = strtab + sym->st_name;
-                    if (mod && mod->version == KPI_VERSION) {
-                        // 调用 KPI 符号解析（仅限依赖模块）
-                        sym_addr = kpi_resolve_symbol(mod, name);
-                    } else {
-                        for (ksym *p = ksym_table_start; p < ksym_table_end; p++) {
-                            if (strcmp(p->name, name) == 0) {
-                                sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
-                                break;
-                            }
+                    if (mod) {
+                        // 第二阶段：优先用 KPI 解析模块间导出符号
+                        if (mod->version == KPI_VERSION) {
+                            sym_addr = kpi_resolve_symbol(mod, name);
                         }
+                        // KPI 解析不到或非 KPI 模块时，回退到内核符号表
+                        if (!sym_addr) sym_addr = resolve_kernel_symbol(name);
+                    } else {
+                        // 第一阶段：只解析内核导出符号
+                        sym_addr = resolve_kernel_symbol(name);
                     }
-                    // if (!sym_addr) { panic("FAILED to find external symbol '%s' (module %s)\n", name, mod ? mod->name : "(legacy)"); }
                 }
             }
 
-            // 重定位类型处理（保持不变）
+            // 重定位类型处理
             uintptr_t value = 0;
             switch (type) {
                 case R_X86_64_RELATIVE :
@@ -84,6 +92,7 @@ void elf_relocate_module(void *base, module_info *mod)
                     break;
                 case R_X86_64_PC32 :
                 case R_X86_64_PLT32 :
+                case R_X86_64_GOTPCREL :
                     value            = (uint32_t)(sym_addr + addend - (uintptr_t)loc);
                     *(uint32_t *)loc = (uint32_t)value;
                     break;
@@ -94,7 +103,6 @@ void elf_relocate_module(void *base, module_info *mod)
                     break;
                 default :
                     plogk("Unsupported type %d at %p (sym=%s)\n", type, loc, sym_name);
-                    // panic("Error while Sloving Modules\n\tModule Name:%s\n\tCause of No Support Rel Type", mod ? mod->name : "(legacy)");
                     break;
             }
         }

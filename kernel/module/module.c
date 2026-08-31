@@ -51,11 +51,14 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
             plogk_info_ptr--;
             return NULL;
     }
+    
+    // 第一阶段：重定位内核符号和内部导出符号（mod == NULL）
     elf_relocate_module(base_addr, NULL);
-    // 2. 提前获取模块入口和 module_info
+
+    // 提前获取模块入口和 module_info
     // NOLINTNEXTLINE(performance-no-int-to-ptr) : recovering a function pointer from the ELF entry address
-    mod_enter    test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
-    module_info *mod  = test(&kinfo);
+    mod_enter test = (mod_enter)(intptr_t)elf_pie_enter_parse(base_addr);
+    module_info *mod = test(&kinfo);
     if (!mod) {
         plogk("Failed to get module info\n");
         plogk_info_ptr--;
@@ -63,18 +66,27 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
     }
     plogk(" Load module %s.\n", mod->name);
 
-    // 3. 如果是 KPI 模块，先加载所有依赖
+    // 第二阶段：处理依赖和注册导出符号，然后统一重定位外部符号（mod != NULL）
     if (mod->version == KPI_VERSION) {
+        // 1. 先处理所有依赖模块的引用计数
         for (uint32_t i = 0; i < mod->dep_count; i++) {
-            const char  *dep_name = mod->dependencies[i];
-            module_info *dep      = find_module(dep_name);
-            dep->refcount++;
+            const char *dep_name = mod->dependencies[i];
+            module_info *dep = find_module(dep_name);
+            if (dep) {
+                dep->refcount++;
+            } else {
+                plogk("Warning: Dependency '%s' not found for module '%s'\n", dep_name, mod->name);
+            }
         }
     }
-    // 4. 执行重定位（传入 mod）
+
+    // 2. 统一重新重定位外部符号（mod != NULL）
     elf_relocate_module(base_addr, mod);
 
-    // 4.1 清零 NOBITS（.bss）段：模块镜像直接使用 cpio 文件缓冲区，
+    // 3. 若是 KPI 模块，注册其导出符号（供后续模块使用）
+    if (mod->version == KPI_VERSION) { kpi_register_module(mod); }
+
+    // 4. 清零 NOBITS（.bss）段：模块镜像直接使用 cpio 文件缓冲区，
     //     而 .bss 无文件内容（sh_offset 与 .rela.text 重叠），必须手动清零，
     //     否则模块内静态变量（如自旋锁 {0,0}）会读到垃圾值导致死锁。
     {
@@ -86,10 +98,7 @@ module_info *load_mod(Elf64_Ehdr *base_addr)
         }
     }
 
-    // 5. 若是 KPI 模块，注册其导出符号
-    if (mod->version == KPI_VERSION) { kpi_register_module(mod); }
-
-    // 6. 调用模块初始化
+    // 5. 调用模块初始化
     if (mod->init) { plogk("Module init returned: %d\n", mod->init()); }
     mod->state = 2;
 

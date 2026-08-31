@@ -3,8 +3,6 @@
 #include "serial.h"
 #include "tkm.h"
 
-kernel_info kinfo;
-
 kernel_info kinfo = {
     .kernel_name = KERNEL_NAME,
     .version     = KERNEL_VERSION,

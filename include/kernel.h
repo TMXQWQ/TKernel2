@@ -59,13 +59,6 @@ typedef struct {
 extern ksym ksym_table_start[];
 extern ksym ksym_table_end[];
 
-// extern enum BL {
-//     Unkown = 0,
-//     Limine = 1,
-//     Linux  = 2, // unsupport now
-//     EFI    = 3, // unsupport now
-// } bootloader;
-
 typedef struct BootInfo {
         enum BL {
             Unkown = 0,

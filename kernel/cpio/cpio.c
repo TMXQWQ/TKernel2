@@ -3,7 +3,7 @@
 #include "string.h"
 
 newc_filesystem ncfs;
-newc_file       file_list[128];
+static newc_file file_list[CPIO_MAX_FILES];
 
 static inline uint32_t hex_char_to_value(char c)
 {
@@ -32,14 +32,28 @@ newc_filesystem cpio_parse(newc_header *base)
     newc_header *header = base;
 #define tmp(a, b)   (a)->b[0], (a)->b[1], (a)->b[2], (a)->b[3], (a)->b[4], (a)->b[5], (a)->b[6], (a)->b[7]
 #define align(addr) (((uintptr_t)(addr) + 3) & ~3)
-    for (int i = 0; i < 128; i++) {
+
+    // 初始化文件系统结构
+    ncfs.capacity = CPIO_MAX_FILES;
+    ncfs.size = 0;
+    ncfs.file_list = file_list;
+
+    for (size_t i = 0; i < CPIO_MAX_FILES; i++) {
         uint64_t ino, size, namesize;
         ino      = cpio_hex8_to_int_manual((char[8]) {tmp(header, c_ino)});
         size     = cpio_hex8_to_int_manual((char[8]) {tmp(header, c_filesize)});
         namesize = cpio_hex8_to_int_manual((char[8]) {tmp(header, c_namesize)});
         if (namesize >= 11 && !strcmp((char *)header->c_name, "TRAILER!!!")) { break; }
-        if (i == 127) { break; }
-        file_list[i] = (newc_file) {ino, size, (align(((uintptr_t)header + 110 + namesize))), (char *)header->c_name};
+
+        // 检查是否超出容量
+        if (ncfs.size >= ncfs.capacity) {
+            // 警告：达到最大容量
+            break;
+        }
+
+        file_list[ncfs.size] = (newc_file) {ino, size, (align(((uintptr_t)header + 110 + namesize))), (char *)header->c_name};
+        ncfs.size++;
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wint-to-pointer-cast"
@@ -55,10 +69,8 @@ newc_filesystem cpio_parse(newc_header *base)
 #pragma GCC diagnostic pop
 #endif
         // header = (newc_header *)align(((void*)header + 110 + namesize + size));
-        ncfs.size++;
     }
 #undef tmp   //(a, b)
 #undef align //(addr)
-    ncfs.file_list = file_list;
     return ncfs;
 }

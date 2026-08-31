@@ -72,6 +72,9 @@ modules/module_list.txt
 
 libhal*
 
-modules/LoT/*
+# Module submodule
+modules/UxTK/*
 !modules/test
 !modules/test2
+modules/*
+

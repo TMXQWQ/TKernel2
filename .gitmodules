@@ -1,4 +1,4 @@
-[submodule "modules/LoT"]
+[submodule "modules/UxTK"]
 	path = modules/UxTK
 	url = git@github.com:TMXQwQ/UxTK
 	ignore = all

@@ -1,2 +1,3 @@
-# 加载顺序取决于此
-MODULE_LIST := test.tkm test2.tkm UxTK.tkm
+# 自动生成的模块加载顺序 - 由拓扑排序算法生成
+# 修改此文件不会影响加载顺序，请修改 Kconfig 中的依赖关系
+MODULE_LIST := UxTK.tkm test.tkm test2.tkm

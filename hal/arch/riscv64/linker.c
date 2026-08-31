@@ -103,16 +103,17 @@ int elf_relocate_module(void *base, module_info *mod)
                         uintptr_t sec_base = GET_SEC_BASE(sym->st_shndx);
                         if (sec_base) sym_addr = sec_base + sym->st_value;
                     } else if (sym->st_shndx == SHN_UNDEF) {
+                        // 外部符号：第二阶段优先用 KPI 解析模块间导出符号
                         if (mod && mod->version == KPI_VERSION)
                             sym_addr = kpi_resolve_symbol(mod, name);
-                        else if (mod) {
+                        // KPI 解析不到或第一阶段（mod==NULL）时，回退到内核符号表
+                        if (!sym_addr) {
                             for (ksym *p = ksym_table_start; p < ksym_table_end; p++)
                                 if (!strcmp(p->name, name)) {
                                     sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;
                                     break;
                                 }
                         }
-                        // 若 mod 为空，外部符号无法解析，sym_addr 保持 0
                     } else if (sym->st_shndx == SHN_ABS) {
                         sym_addr = sym->st_value;   // 绝对值
                     }
@@ -185,13 +186,11 @@ int elf_relocate_module(void *base, module_info *mod)
                 }
                 sym_addr = sec_base + sym->st_value;
             } else if (sym->st_shndx == SHN_UNDEF) {
-                if (!mod) {
-                    plogk("External symbol '%s' but mod is NULL\n", sym_name);
-                    ret = -1; goto out;
-                }
-                if (mod->version == KPI_VERSION)
+                // 外部符号：第二阶段优先用 KPI 解析模块间导出符号
+                if (mod && mod->version == KPI_VERSION)
                     sym_addr = kpi_resolve_symbol(mod, sym_name);
-                else {
+                // KPI 解析不到或第一阶段（mod==NULL）时，回退到内核符号表
+                if (!sym_addr) {
                     for (ksym *p = ksym_table_start; p < ksym_table_end; p++)
                         if (!strcmp(p->name, sym_name)) {
                             sym_addr = kinfo.bootinfo.kernel_base_addr + p->offset;

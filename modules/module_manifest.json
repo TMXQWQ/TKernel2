@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "description": "TKernel2 模块清单 - 自动生成",
+  "modules": [
+    {
+      "name": "UxTK",
+      "path": "modules/UxTK",
+      "tkm_file": null,
+      "dependencies": [],
+      "enabled": true
+    },
+    {
+      "name": "test",
+      "path": "modules/test",
+      "tkm_file": null,
+      "dependencies": [],
+      "enabled": true
+    },
+    {
+      "name": "test2",
+      "path": "modules/test2",
+      "tkm_file": null,
+      "dependencies": [],
+      "enabled": true
+    }
+  ]
+}

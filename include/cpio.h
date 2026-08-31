@@ -35,13 +35,16 @@ typedef struct {
 } newc_file;
 
 typedef struct {
-        size_t     size;
-        newc_file *file_list;
+        size_t     capacity; // 最大容量
+        size_t     size;     // 当前文件数量
+        newc_file *file_list; // 文件列表
 } newc_filesystem;
 
 newc_filesystem cpio_parse(newc_header *base);
 
+/* CPIO 最大文件数量限制 */
+#define CPIO_MAX_FILES 512
+
 extern newc_filesystem ncfs;
-extern newc_file       file_list[128];
 
 #endif
