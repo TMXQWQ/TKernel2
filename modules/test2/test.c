@@ -31,7 +31,7 @@ module_info mi = {
 
 uintptr_t module_init(void)
 {
-    printk("test\n");
+    plogk("test\n");
     test();
     return 0;
 }

@@ -17,12 +17,12 @@ kernel_info *_kinfo;
 uintptr_t module_init(void);
 
 void test(){
-    printk("Test!!!\n");
+    plogk("Test!!!\n");
 };
 
 #define EXPORT_COUNT 1
 kpi_export_sym mm_exports[] = {
-    { "test", (uintptr_t)test, STT_FUNC },
+    { "test", (uintptr_t)test},
 };
 
 module_info mi = {
@@ -37,7 +37,7 @@ module_info mi = {
 
 uintptr_t module_init(void)
 {
-    printk("test\n");
+    plogk("test\n");
     return 0;
 }
 module_info *_start(kernel_info *ki)

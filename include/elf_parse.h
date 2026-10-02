@@ -18,6 +18,7 @@ Elf64_Shdr *get_target_section(Elf64_Shdr *rel_hdr, Elf64_Shdr *shdr);
 
 enter elf_pie_enter_parse(Elf64_Ehdr *base);
 
-void elf_relocate_module(void *base, module_info* mod);
+/* 模块重定位：0 成功，-1 失败。各架构 linker 统一此接口。 */
+int elf_relocate_module(void *base, module_info* mod);
 
 #endif

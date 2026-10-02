@@ -1,4 +1,4 @@
-// #include "elf_parse.h"
+#include "elf_parse.h"
 #include "kernel.h"
 #include "kpi.h"
 #include "printk.h"

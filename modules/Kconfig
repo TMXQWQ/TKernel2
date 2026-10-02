@@ -11,4 +11,8 @@ if MODULES
     source "modules/test2/Kconfig"
     source "modules/UxTK/Kconfig"
     source "modules/task/Kconfig"
+    source "modules/eloader/Kconfig"
+    source "modules/linux_syscall/Kconfig"
+    source "modules/dpi/Kconfig"
+    source "modules/user/Kconfig"
 endif

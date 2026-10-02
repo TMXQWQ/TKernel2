@@ -21,8 +21,33 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 MODULES_DIR = PROJECT_ROOT / "modules"
 
+# Kconfig 配置符号 -> 模块目录名 的映射。
+# Kconfig 里 `depends on` 用的是配置符号（如 TASK_MODULE / LINUX_SYSCALL），
+# 而模块目录名是 task / linux_syscall，二者不一致。必须在生成清单时把依赖翻译
+# 成目录名，否则 sort_modules.py 的拓扑排序认不出依赖，加载顺序就是错的。
+# （在 generate_manifest() 里预扫描填充。）
+SYMBOL_TO_DIR = {}
+
+
+def parse_kconfig_symbol(kconfig_path):
+    """从 Kconfig 中提取 `config <SYMBOL>` 的符号名；失败返回 None"""
+    if not kconfig_path.exists():
+        return None
+    try:
+        with open(kconfig_path, 'r', encoding='utf-8') as f:
+            for line in f.read().split('\n'):
+                line = line.strip()
+                if line.startswith('config '):
+                    parts = line.split()
+                    if len(parts) > 1:
+                        return parts[1]
+    except Exception:
+        return None
+    return None
+
+
 def parse_kconfig_dependencies(kconfig_path):
-    """解析 Kconfig 文件，提取依赖关系"""
+    """解析 Kconfig 文件，提取依赖关系（返回模块目录名列表）"""
     dependencies = []
     if not kconfig_path.exists():
         return dependencies
@@ -32,19 +57,24 @@ def parse_kconfig_dependencies(kconfig_path):
             content = f.read()
 
         # 查找 dependencies 或 depends on 语句
-        lines = content.split('\n')
-        for line in lines:
+        for line in content.split('\n'):
             line = line.strip()
             # 只提取模块依赖，忽略通用的 depends on 语句
             if line.startswith('depends on'):
-                # 提取依赖的模块名
+                # 'depends on X'.split() == ['depends', 'on', 'X']，
+                # 依赖名是 parts[2]（此前误写成 parts[1]，取到的是 'on'，
+                # 会被下面的过滤条件吞掉，导致所有模块依赖恒为空）。
                 parts = line.split()
-                if len(parts) > 1:
-                    dep = parts[1]
-                    # 过滤掉非模块依赖
-                    if dep not in ['m', 'y', 'n', 'on']:
-                        if dep not in dependencies:
-                            dependencies.append(dep)
+                if len(parts) > 2:
+                    dep = parts[2]
+                    # 过滤掉非模块依赖（m/y/n/on 等）
+                    if dep in ['m', 'y', 'n', 'on']:
+                        continue
+                    # 把配置符号翻译成模块目录名；翻不到的（如 CPU_FEATURE_*）
+                    # 说明不是模块依赖，直接忽略。
+                    dep_dir = SYMBOL_TO_DIR.get(dep)
+                    if dep_dir and dep_dir not in dependencies:
+                        dependencies.append(dep_dir)
     except Exception as e:
         print(f"警告: 解析 {kconfig_path} 失败: {e}", file=sys.stderr)
 
@@ -96,6 +126,14 @@ def generate_manifest():
     if not MODULES_DIR.exists():
         print(f"错误: 模块目录不存在: {MODULES_DIR}", file=sys.stderr)
         return manifest
+
+    # 预扫描：建立 配置符号 -> 模块目录名 的映射，供依赖翻译使用
+    SYMBOL_TO_DIR.clear()
+    for item in MODULES_DIR.iterdir():
+        if item.is_dir() and not item.name.startswith('.') and (item / "Makefile").exists():
+            symbol = parse_kconfig_symbol(item / "Kconfig")
+            if symbol:
+                SYMBOL_TO_DIR[symbol] = item.name
 
     for item in MODULES_DIR.iterdir():
         if item.is_dir() and not item.name.startswith('.'):

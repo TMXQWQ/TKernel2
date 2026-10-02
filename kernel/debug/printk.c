@@ -36,28 +36,8 @@ void printk(const char *format, ...)
     va_end(args);
 }
 
-/* Kernel print log */
-void plogk(const char *format, ...)
-{
-#if KERNEL_LOG
-    va_list args;
-    va_start(args, format);
-    // printk(ansi_V("[ INFO ] "));
-    printk("%s", "\e["
-                 "1"
-                 ";3"
-                 "5"
-                 ";4"
-                 "0"
-                 "m");
-    printk("[ %s ] ", plogk_info_stack[plogk_info_ptr]);
-    printk("\e[0m");
-    vwprintf(&stdio, format, args);
-    va_end(args);
-#else
-    (void)format;
-#endif
-}
+/* plogk / klog_printf / klog_dump 的实现见文件末尾（须置于 vwprintf 定义之后）。 */
+
 
 /* Handler of unsafe buf writing */
 uint8_t unsafe_buf_write(writer *writer, char c)
@@ -394,4 +374,95 @@ size_t vwprintf(writer *writer, const char *fmt, va_list args)
         fmt_ptr++;
     }
     return result;
+}
+
+/* ================= 内核日志环形缓冲 =================
+ * 设计：普通 plogk 同时写环形缓冲 + 刷串口（保留启动日志可见）；
+ *      klog_printf 只写环形缓冲、不刷串口（syscall 等高频噪音走它，
+ *      避免污染 sh 所在的 COM1 控制台）。需要回看时调用 klog_dump()
+ *     把缓冲全部刷到串口（panic/调试用）。 */
+#define KLOG_RING_SIZE 65536
+static char   klog_ring[KLOG_RING_SIZE];
+static size_t klog_prod = 0;   /* 写指针（不取模，写入时取模） */
+static size_t klog_cons = 0;   /* 读指针（dump 用） */
+
+static void klog_ring_write(const char *s, size_t n) {
+    for (size_t i = 0; i < n && s[i]; i++) {
+        klog_ring[klog_prod & (KLOG_RING_SIZE - 1)] = s[i];
+        klog_prod++;
+    }
+}
+
+static void serial_puts(const char *s, size_t n) {
+    if (!stdio.handler) return;
+    for (size_t i = 0; i < n; i++) stdio.handler(&stdio, s[i]);
+}
+static void serial_puts_str(const char *s) { serial_puts(s, strlen(s)); }
+
+/* 内存写回的 writer（把格式化结果写进本地缓冲区，便于先缓冲再决定是否刷串口） */
+typedef struct { char *buf; int idx; } klog_mem_t;
+static uint8_t klog_mem_write(writer *w, char c) {
+    klog_mem_t *d = (klog_mem_t *)w->data;
+    d->buf[d->idx++] = c;
+    return 1;
+}
+
+/* 把带 [prefix] 头的行格式化进 buf（纯文本，不含 ANSI 转义） */
+static void klog_format(char *buf, size_t cap, const char *format, va_list ap) {
+    char hdr[64];
+    int hl = sprintf(hdr, "[ %s ] ", plogk_info_stack[plogk_info_ptr]);
+    if (hl < 0) hl = 0;
+    if ((size_t)hl > cap - 2) hl = cap - 2;
+    memcpy(buf, hdr, (size_t)hl);
+    klog_mem_t d = { .buf = buf + hl, .idx = 0 };
+    writer w = { .data = &d, .handler = klog_mem_write };
+    vwprintf(&w, format, ap);
+    buf[hl + d.idx] = '\0';
+}
+
+/* 普通内核日志：进环形缓冲 + 刷串口（[prefix] 头着色，正文默认色） */
+void plogk(const char *format, ...) {
+#if KERNEL_LOG
+    va_list args; va_start(args, format);
+    char buf[BUF_SIZE];
+    klog_format(buf, BUF_SIZE, format, args);
+    size_t len = strlen(buf);
+    klog_ring_write(buf, len);
+    /* 仅给 [prefix] 头着色，正文保持默认色（与原仓库行为一致，
+     * 避免整行被 \e[1;35;40m 裹成前景品红+背景黑）。 */
+    char hdr[64];
+    int hl = sprintf(hdr, "[ %s ] ", plogk_info_stack[plogk_info_ptr]);
+    if (hl < 0) hl = 0;
+    serial_puts_str("\e[1;35;40m");
+    serial_puts(hdr, (size_t)hl);
+    serial_puts_str("\e[0m");
+    serial_puts(buf + hl, len - (size_t)hl);
+    va_end(args);
+#else
+    (void)format;
+#endif
+}
+
+/* 静默日志：仅进环形缓冲，不刷串口（syscall 高频噪音用） */
+void klog_printf(const char *format, ...) {
+#if KERNEL_LOG
+    va_list args; va_start(args, format);
+    char buf[BUF_SIZE];
+    klog_format(buf, BUF_SIZE, format, args);
+    klog_ring_write(buf, strlen(buf));
+    va_end(args);
+#else
+    (void)format;
+#endif
+}
+
+/* 把环形缓冲全部刷到串口（panic/调试用） */
+void klog_dump(void) {
+    size_t total = klog_prod - klog_cons;
+    if (total > KLOG_RING_SIZE) total = KLOG_RING_SIZE;
+    size_t start = klog_prod - total;
+    for (size_t i = 0; i < total; i++) {
+        char c = klog_ring[(start + i) & (KLOG_RING_SIZE - 1)];
+        if (stdio.handler) stdio.handler(&stdio, c);
+    }
 }

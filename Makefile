@@ -94,7 +94,10 @@ IMAGE_NAME	:=	TKernel-test
 
 C_SOURCES      := $(shell find kernel -name "*.c") $(shell find boot -name "*.c") $(shell find lib -name "*.c")
 MOD_SOURCES	:= $(shell find modules -name "*.c")
-S_SOURCES      := $(shell find * -name "*.s")
+# 注意：内核链接只收 kernel/boot/lib 下的汇编，绝不能 `find *`——否则会误把
+# modules/ 下的 syscall_entry.s / jump_to_user.s 链进 kernel.bin，而它们依赖的
+# 模块 C 符号（如 syscall_dispatch）不在内核链接里，导致 undefined reference。
+S_SOURCES      := $(shell find kernel -name "*.s") $(shell find boot -name "*.s") $(shell find lib -name "*.s")
 HEADERS        := $(shell find * -name "*.h")
 OBJS           := $(C_SOURCES:%.c=%.o) $(S_SOURCES:%.s=%.o)
 DEPS           := $(OBJS:%.o=%.d)
@@ -151,7 +154,9 @@ LD_FLAGS       += -nostdlib -T assets/linker.ld
 # endif
 
 
-all: info TKernel-test.iso
+# 完整 OS 构建已交由 testos(xmake/nix) 负责；内核 Makefile 仅生成 kernel.bin。
+# iso / initrd 目标保留为可选项（make TKernel-test.iso / make initrd.img），但不再使用。
+all: info kernel.bin
 
 %.o: %.c
 	$(V)$(CC) $(C_FLAGS) $(C_CONFIG) -c -o $@ $<

@@ -338,8 +338,8 @@ Kernel Programming Interface modules can export symbols:
 
 ```c
 kpi_export_sym my_exports[] = {
-    {"my_function", (uintptr_t)my_function, STT_FUNC},
-    {"my_variable", (uintptr_t)&my_variable, STT_OBJECT},
+    {"my_function", (uintptr_t)my_function},
+    {"my_variable", (uintptr_t)&my_variable},
 };
 ```
 

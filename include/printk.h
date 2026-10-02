@@ -84,6 +84,12 @@ void printk(const char *format, ...);
 /* Kernel print log */
 void plogk(const char *format, ...);
 
+/* 静默日志：仅写内核环形缓冲，不刷串口（syscall 等高频噪音用） */
+void klog_printf(const char *format, ...);
+
+/* 把内核环形缓冲全部刷到串口（panic/调试回看用） */
+void klog_dump(void);
+
 /* Handler of unsafe buf writing */
 uint8_t unsafe_buf_write(writer *writer, char c);
 

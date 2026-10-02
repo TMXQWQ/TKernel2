@@ -20,10 +20,11 @@ static uintptr_t resolve_kernel_symbol(const char *name)
 // 两阶段模块重定位：
 //   - mod == NULL：第一阶段，只重定位内部符号（模块内）+ 内核导出符号（ksym 表）
 //   - mod != NULL：第二阶段，统一重定位外部符号（模块间 KPI 导出，回退到内核符号表）
-void elf_relocate_module(void *base, module_info *mod)
+// 返回 0 成功；-1 失败（base 为空 / 遇到不支持的重定位类型）。
+int elf_relocate_module(void *base, module_info *mod)
 {
-    plogk_info_stack[++plogk_info_ptr] = "RELOC";
-    if (!base) goto END;
+    if (!base) return -1;
+
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)base;
 
     Elf64_Shdr *shdr = (Elf64_Shdr *)((char *)base + ehdr->e_shoff);
@@ -50,13 +51,11 @@ void elf_relocate_module(void *base, module_info *mod)
             uint32_t sym_idx = ELF64_R_SYM(rela[j].r_info);
             int64_t  addend  = rela[j].r_addend;
 
-            uintptr_t  *loc      = (uintptr_t *)((uintptr_t)target_sec_base + rela[j].r_offset);
-            uintptr_t   sym_addr = 0;
-            const char *sym_name = "?";
+            uintptr_t *loc      = (uintptr_t *)((uintptr_t)target_sec_base + rela[j].r_offset);
+            uintptr_t  sym_addr = 0;
 
             if (sym_idx > 0 && (uint64_t)sym_idx < (uint64_t)nsyms) {
                 Elf64_Sym *sym = &symtab[sym_idx];
-                sym_name       = strtab + sym->st_name;
 
                 if (sym->st_shndx != SHN_UNDEF) {
                     // 内部符号：直接计算地址
@@ -102,11 +101,11 @@ void elf_relocate_module(void *base, module_info *mod)
                     *(uint64_t *)loc = (uint64_t)value;
                     break;
                 default :
-                    plogk("Unsupported type %d at %p (sym=%s)\n", type, loc, sym_name);
-                    break;
+                    // 不支持的重定位类型：上报失败
+                    return -1;
             }
         }
     }
-END:
-    plogk_info_ptr--;
+
+    return 0;
 }

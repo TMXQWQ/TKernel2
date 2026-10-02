@@ -67,11 +67,25 @@ debug:
 	@echo "Current directory: $(pwd)"
 	@echo "Files in current directory: $(wildcard *.tkm)"
 
+# initrd 布局（规范化）：
+#   etc/modules/*.tkm     内核模块（不再放 initrd root）
+#   sbin/busybox          sh（init.c 经 SYS_SPAWN 以 argv[0]="sh" 启动其 ash）
+#   sbin/{devfs,ramdisk,fsd}  user server（由 init 启动，见 init.c）
+# 注：init 进程本身是 init.c 编成的 stub，由内核 user 模块映射启动，不在 initrd 里。
 initrd.img: $(ALL_MODULES)
 	$(V)
-	$(Q) find . -maxdepth 1 -name "*.tkm" | cpio --format=newc -o > $@ 2> /dev/null
+	$(Q) mkdir -p etc/modules
+	$(Q) ( for m in $(MODULE_LIST); do \
+	        d=$${m%.tkm}; \
+	        mn=$$(grep -rhoE 'Mod_Name[[:space:]]+[A-Za-z_0-9]+' $$d --include='*.c' 2>/dev/null | head -1 | awk '{print $$2}'); \
+	        [ -z "$$mn" ] && mn=$$d; \
+	        f=$$mn.tkm; [ -f "$$f" ] || f=$$d.tkm; \
+	        if [ -f "$$f" ]; then cp -f "$$f" etc/modules/; echo "etc/modules/$$f"; fi; \
+	      done; \
+	      for s in busybox devfs ramdisk fsd; do [ -f sbin/$$s ] && echo sbin/$$s; done; \
+	    ) | cpio --format=newc -o > $@ 2> /dev/null
 	$(Q) cp $@ ../
-	$(Q) printf "\033[1;32m[ Info  ]\033[0m initrd.img 已创建，包含 %d 个模块\n" $$(find . -maxdepth 1 -name "*.tkm" | wc -l)
+	$(Q) printf "\033[1;32m[ Info  ]\033[0m initrd.img 已创建（etc/modules/*.tkm + sbin/*，按依赖顺序）\n"
 
 clean:
 	$(V) rm -f initrd.img $(OBJS) $(DEPS) $(tkms) $(MODULE_MANIFEST)

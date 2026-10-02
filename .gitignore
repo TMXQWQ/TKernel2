@@ -70,6 +70,10 @@ qemu.log
 kernel.bin.1
 modules/module_list.txt
 
+# 运行/调试输出日志（serial 抓日志、build 日志等）
+*.log
+*.log.prev
+
 libhal*
 
 # Module submodule

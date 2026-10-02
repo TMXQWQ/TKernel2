@@ -245,8 +245,8 @@ KPI（Kernel Programming Interface）模块可以导出符号供其他模块使�
 ```c
 // 导出符号表
 kpi_export_sym my_exports[] = {
-    {"my_function", (uintptr_t)my_function, STT_FUNC},
-    {"my_variable", (uintptr_t)&my_variable, STT_OBJECT},
+    {"my_function", (uintptr_t)my_function},
+    {"my_variable", (uintptr_t)&my_variable},
 };
 
 module_info mi = {
@@ -363,8 +363,8 @@ int my_variable = 100;
 
 // 导出符号表
 kpi_export_sym my_exports[] = {
-    {"my_function", (uintptr_t)my_function, STT_FUNC},
-    {"my_variable", (uintptr_t)&my_variable, STT_OBJECT},
+    {"my_function", (uintptr_t)my_function},
+    {"my_variable", (uintptr_t)&my_variable},
 };
 
 module_info mi = {

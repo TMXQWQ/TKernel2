@@ -23,7 +23,6 @@ typedef struct module_info {
 typedef struct kpi_export_sym {
         char     *name;
         uintptr_t value;
-        uint32_t  type;
 } kpi_export_sym;
 
 // 新增：KPI 版本号

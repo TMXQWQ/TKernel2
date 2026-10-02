@@ -21,6 +21,8 @@ void panic(const char *format, ...)
 #if KERNEL_LOG
     va_list args;
     va_start(args, format);
+    /* 先把内核环形缓冲（syscall 等静默日志）全部刷到串口，便于回看崩溃前轨迹 */
+    klog_dump();
     pERRk();
     printk("Kernel Panic --- Not Sync.\n");
     pERRk();
